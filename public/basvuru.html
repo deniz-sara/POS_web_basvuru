@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POS Başvurusu | Firma Adı</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="form-header">
+                <h1>Fiziki POS Başvurusu</h1>
+                <p>Başvurunuzu tamamlamak için lütfen aşağıdaki adımları takip edin.</p>
+            </div>
+
+            <!-- Stepper -->
+            <div class="stepper">
+                <div class="step active" id="step-1-indicator">
+                    <div class="step-circle">1</div>
+                    <div class="step-label">Firma Bilgileri</div>
+                </div>
+                <div class="step" id="step-2-indicator">
+                    <div class="step-circle">2</div>
+                    <div class="step-label">İletişim</div>
+                </div>
+                <div class="step" id="step-3-indicator">
+                    <div class="step-circle">3</div>
+                    <div class="step-label">POS Talep</div>
+                </div>
+                <div class="step" id="step-4-indicator">
+                    <div class="step-circle">4</div>
+                    <div class="step-label">Evrak Yükleme</div>
+                </div>
+            </div>
+
+            <form id="posForm">
+                <!-- STEP 1: Firma Bilgileri -->
+                <div class="step-content active" id="step-1">
+                    <div class="form-grid">
+                        <div class="form-group full-width">
+                            <label>Firma Unvanı <span class="required">*</span></label>
+                            <input type="text" name="firma_unvani" required placeholder="Tam Ticari Unvan">
+                        </div>
+                        <div class="form-group">
+                            <label>Tabela Adı / Slip Başlığı</label>
+                            <input type="text" name="tabela_adi" maxlength="20" placeholder="Max 20 Karakter">
+                        </div>
+                        <div class="form-group">
+                            <label>Şirket Tipi <span class="required">*</span></label>
+                            <select name="sirket_tipi" required>
+                                <option value="">Seçiniz...</option>
+                                <option value="Sahis">Şahıs</option>
+                                <option value="Tuzel">Tüzel</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Vergi No / TC Kimlik No <span class="required">*</span></label>
+                            <input type="text" name="vergi_no" required maxlength="11" placeholder="10 veya 11 Haneli">
+                        </div>
+                        <div class="form-group">
+                            <label>Vergi Dairesi <span class="required">*</span></label>
+                            <input type="text" name="vergi_dairesi" required placeholder="Bağlı Olunan Vergi Dairesi">
+                        </div>
+                        <div class="form-group">
+                            <label>Ticaret Sicil No <span class="required">*</span></label>
+                            <input type="text" name="ticaret_sicil_no" required placeholder="Ticaret Sicil Numarası">
+                        </div>
+                        <div class="form-group">
+                            <label>Faaliyet Alanı <span class="required">*</span></label>
+                            <select name="faaliyet_alani" required>
+                                <option value="">Seçiniz...</option>
+                                <option value="Perakende">Perakende</option>
+                                <option value="Hizmet">Hizmet</option>
+                                <option value="Yeme-İçme">Yeme-İçme</option>
+                                <option value="E-Ticaret">E-Ticaret</option>
+                                <option value="Diğer">Diğer</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>İl <span class="required">*</span></label>
+                            <select name="il" id="ilSelect" required>
+                                <option value="">İl Seçiniz</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>İlçe <span class="required">*</span></label>
+                            <select name="ilce" id="ilceSelect" required disabled>
+                                <option value="">Önce İl Seçiniz</option>
+                            </select>
+                        </div>
+                        <div class="form-group full-width">
+                            <label>Tam Adres <span class="required">*</span></label>
+                            <textarea name="adres" required rows="3" placeholder="Firma Açık Adresi"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 2: İletişim Bilgileri -->
+                <div class="step-content" id="step-2">
+                    <div class="form-grid">
+                        <div class="form-group full-width">
+                            <label>Yetkili Adı Soyadı <span class="required">*</span></label>
+                            <input type="text" name="yetkili_ad_soyad" required placeholder="Ad Soyad">
+                        </div>
+                        <div class="form-group">
+                            <label>Cep Telefonu <span class="required">*</span></label>
+                            <input type="tel" name="telefon" required placeholder="05XXXXXXXXX" pattern="^0?5[0-9]{9}$"
+                                title="Lütfen geçerli bir telefon numarası giriniz">
+                        </div>
+                        <div class="form-group">
+                            <label>E-posta Adresi <span class="required">*</span></label>
+                            <input type="email" name="email" required placeholder="ornek@firma.com">
+                        </div>
+                        <div class="form-group full-width">
+                            <label>Alternatif Telefon</label>
+                            <input type="tel" name="alt_telefon" placeholder="İsteğe Bağlı">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 3: POS Talep -->
+                <div class="step-content" id="step-3">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Talep Edilen POS Adedi <span class="required">*</span></label>
+                            <input type="number" name="pos_adedi" required min="1" max="50" value="1">
+                        </div>
+                        <div class="form-group">
+                            <label>POS Tipi <span class="required">*</span></label>
+                            <select name="pos_tipi" required>
+                                <option value="">Seçiniz</option>
+                                <option value="Masaüstü">Masaüstü (Kablolu)</option>
+                                <option value="Mobil">Mobil (Seyyar)</option>
+                                <option value="Yazarkasa">Yazarkasa POS / ÖKC</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Tahmini Aylık Ciro (TL) <span class="required">*</span></label>
+                            <input type="number" name="aylik_ciro" required min="1000" placeholder="100000">
+                        </div>
+                        <div class="form-group">
+                            <label>Ortalama İşlem Tutarı (TL) <span class="required">*</span></label>
+                            <input type="number" name="ort_islem_tutari" required min="10" placeholder="500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 4: Evraklar -->
+                <div class="step-content" id="step-4">
+                    <p style="margin-bottom: 20px; color: var(--text-light); font-size: 14px;">
+                        Lütfen başvuru için gerekli evrakları PDF, JPG veya PNG formatında (Maks 15MB) yükleyiniz.
+                        Zorunlu evrakları yüklemeden başvuruyu tamamlayamazsınız.
+                    </p>
+
+                    <div class="file-upload-grid" id="fileGrid">
+                        <!-- JS Tarafından Doldurulacak -->
+                    </div>
+
+                    <div style="margin-top: 30px;">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="kvkk" required>
+                            <label for="kvkk">KVKK Aydınlatma Metni'ni okudum ve kabul ediyorum. <span
+                                    class="required">*</span></label>
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="onay" required>
+                            <label for="onay">Verdiğim bilgilerin doğruluğunu ve başvuru koşullarını kabul ediyorum.
+                                <span class="required">*</span></label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Success Screen -->
+                <div class="step-content success-state" id="step-5">
+                    <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+                        <circle class="checkmark__circle" cx="26" cy="26" r="25" fill="none" />
+                        <path class="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8" />
+                    </svg>
+                    <h2>Başvurunuz Alındı!</h2>
+                    <p>Referans Numaranız: <strong id="successBasvuruNo">---</strong></p>
+                    <p style="font-size: 14px; color: var(--text-light);">Başvurunuz alınmış olup değerlendirme sürecine
+                        geçilmiştir. Durumu takip etmeniz için detaylar e-posta ve SMS olarak gönderilmiştir.</p>
+                    <div style="margin-top: 30px;">
+                        <a href="/pos/sorgula.html" id="trackLink" class="btn btn-next">Başvuru Durumu Sorgula</a>
+                    </div>
+                </div>
+
+                <!-- Buttons -->
+                <div class="btn-group" id="btnGroup">
+                    <button type="button" class="btn btn-prev hidden" id="prevBtn" onclick="nextPrev(-1)">Geri</button>
+                    <div style="flex:1"></div>
+                    <button type="button" class="btn btn-next" id="nextBtn" onclick="nextPrev(1)">İleri</button>
+                    <button type="button" class="btn btn-submit hidden" id="submitBtn" onclick="submitForm()">Başvuruyu
+                        Gönder</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="iller.js"></script>
+    <script>
+        const belgeler = [
+            { id: 'ticari_sicil', mask: 'Ticari Sicil Gazetesi', required: true, desc: 'Güncel tarihli' },
+            { id: 'imza_sirkuleri', mask: 'İmza Sirküleri', required: true, desc: 'Noter onaylı' },
+            { id: 'vergi_levhasi', mask: 'Vergi Levhası', required: true, desc: 'Son yıla ait' },
+            { id: 'kimlik_fotokopisi', mask: 'Kimlik Fotokopisi', required: true, desc: 'Yetkilinin ön yüzü' },
+            { id: 'ikametgah', mask: 'İkametgah Belgesi', required: true, desc: 'E-Devlet üzerinden' },
+            { id: 'faaliyet_belgesi', mask: 'Faaliyet Belgesi', required: true, desc: 'Oda kayıt belgesi' },
+            { id: 'gmu_muafiyet', mask: 'GMU ve Muafiyet Belgesi', required: false, desc: 'İsteğe bağlı' },
+            { id: 'kira_tapu', mask: 'QNBpay Sözleşme', required: false, desc: 'İsteğe bağlı' },
+            { id: 'banka_hesabi', mask: 'Banka Hesap Cüzdanı', required: false, desc: 'İsteğe bağlı' }
+        ];
+
+        let currentTab = 0;
+        let filesData = {};
+
+        function init() {
+            renderFileGrid();
+            initSehirler();
+            showTab(currentTab);
+        }
+
+        function initSehirler() {
+            const ilSelect = document.getElementById('ilSelect');
+            const ilceSelect = document.getElementById('ilceSelect');
+
+            if (typeof IL_ILCE !== 'undefined') {
+                const iller = Object.keys(IL_ILCE).sort((a, b) => a.localeCompare(b, 'tr'));
+                iller.forEach(il => {
+                    ilSelect.add(new Option(il, il));
+                });
+
+                ilSelect.addEventListener('change', function () {
+                    const secilenIl = this.value;
+                    ilceSelect.innerHTML = '<option value="">İlçe Seçiniz</option>';
+                    if (secilenIl && IL_ILCE[secilenIl]) {
+                        IL_ILCE[secilenIl].forEach(ilce => {
+                            ilceSelect.add(new Option(ilce, ilce));
+                        });
+                        ilceSelect.disabled = false;
+                    } else {
+                        ilceSelect.innerHTML = '<option value="">Önce İl Seçiniz</option>';
+                        ilceSelect.disabled = true;
+                    }
+                });
+            }
+        }
+
+        function renderFileGrid() {
+            const grid = document.getElementById('fileGrid');
+            belgeler.forEach(b => {
+                const reqHTML = b.required ? '<span class="required">*</span>' : '';
+                grid.innerHTML += `
+                    <div class="file-card" id="card_${b.id}">
+                        <h4>${b.mask} ${reqHTML}</h4>
+                        <div class="desc">${b.desc}</div>
+                        <input type="file" id="file_${b.id}" name="${b.id}" class="file-input" accept=".pdf,.png,.jpg,.jpeg" onchange="handleFile(this, '${b.id}')" ${b.required ? 'required' : ''}>
+                        <label for="file_${b.id}" class="file-btn">Dosya Seç</label>
+                        <span class="file-name" id="name_${b.id}">Yüklenmedi</span>
+                    </div>
+                `;
+            });
+        }
+
+        function handleFile(input, id) {
+            const card = document.getElementById('card_' + id);
+            const nameEl = document.getElementById('name_' + id);
+
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                if (file.size > 15 * 1024 * 1024) {
+                    alert('Dosya boyutu 15MB dan büyük olamaz.');
+                    input.value = '';
+                    return;
+                }
+                card.classList.add('has-file');
+                nameEl.innerText = file.name;
+                nameEl.style.color = 'var(--secondary)';
+                filesData[id] = file;
+            } else {
+                card.classList.remove('has-file');
+                nameEl.innerText = 'Yüklenmedi';
+                nameEl.style.color = 'var(--primary)';
+                delete filesData[id];
+            }
+            checkSubmitStatus();
+        }
+
+        function showTab(n) {
+            const contents = document.getElementsByClassName("step-content");
+            const btnPrev = document.getElementById("prevBtn");
+            const btnNext = document.getElementById("nextBtn");
+            const btnSubmit = document.getElementById("submitBtn");
+
+            for (let i = 0; i < contents.length; i++) {
+                contents[i].classList.remove('active');
+            }
+            if (contents[n]) contents[n].classList.add('active');
+
+            // Stepper update
+            if (n < 4) {
+                const steps = document.getElementsByClassName("step");
+                for (let i = 0; i < steps.length; i++) {
+                    steps[i].classList.remove("active", "completed");
+                    if (i < n) steps[i].classList.add("completed");
+                    if (i === n) steps[i].classList.add("active");
+                }
+            }
+
+            if (n === 0) {
+                btnPrev.classList.add("hidden");
+            } else {
+                btnPrev.classList.remove("hidden");
+            }
+
+            if (n === 3) { // 4th step
+                btnNext.classList.add("hidden");
+                btnSubmit.classList.remove("hidden");
+                checkSubmitStatus();
+            } else if (n === 4) { // Success step
+                document.getElementById('btnGroup').style.display = 'none';
+                document.querySelector('.stepper').style.display = 'none';
+            } else {
+                btnNext.classList.remove("hidden");
+                btnSubmit.classList.add("hidden");
+            }
+        }
+
+        function validateForm() {
+            const n = currentTab;
+            const content = document.getElementsByClassName("step-content")[n];
+            const inputs = content.querySelectorAll("input[required], select[required], textarea[required]");
+
+            let valid = true;
+            for (let i = 0; i < inputs.length; i++) {
+                if (!inputs[i].value) {
+                    inputs[i].classList.add('invalid');
+                    inputs[i].style.borderColor = 'var(--error)';
+                    valid = false;
+                } else {
+                    inputs[i].style.borderColor = 'var(--border)';
+                }
+            }
+            return valid;
+        }
+
+        function nextPrev(n) {
+            if (n == 1 && !validateForm()) return false;
+            currentTab += n;
+            showTab(currentTab);
+        }
+
+        function checkSubmitStatus() {
+            const btnSubmit = document.getElementById("submitBtn");
+            const kvkk = document.getElementById("kvkk").checked;
+            const onay = document.getElementById("onay").checked;
+
+            let filesValid = true;
+            belgeler.forEach(b => {
+                if (b.required && !filesData[b.id]) filesValid = false;
+            });
+
+            if (filesValid && kvkk && onay) {
+                btnSubmit.disabled = false;
+                btnSubmit.innerText = "Başvuruyu Gönder";
+            } else {
+                btnSubmit.disabled = true;
+                btnSubmit.innerText = "Zorunlu Alanları Tamamlayın";
+            }
+        }
+
+        document.getElementById("kvkk").addEventListener('change', checkSubmitStatus);
+        document.getElementById("onay").addEventListener('change', checkSubmitStatus);
+
+        async function submitForm() {
+            const btn = document.getElementById("submitBtn");
+            btn.innerHTML = '<span style="animation: pulse 1s infinite;">Gönderiliyor...</span>';
+            btn.disabled = true;
+
+            const form = document.getElementById('posForm');
+            const data = new FormData(form);
+
+            // Clean up files we track manually just in case
+            belgeler.forEach(b => {
+                data.delete(b.id);
+                if (filesData[b.id]) data.append(b.id, filesData[b.id]);
+            });
+
+            try {
+                const response = await fetch('/api/pos/basvuru', {
+                    method: 'POST',
+                    body: data
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    document.getElementById('successBasvuruNo').innerText = result.basvuru_no;
+                    // document.getElementById('trackLink').href = '/pos/durum.html?token=' + result.token; // Changed to static link below
+                    currentTab = 4;
+                    showTab(currentTab);
+                } else {
+                    alert('Hata: ' + result.message);
+                    btn.innerText = "Başvuruyu Gönder";
+                    btn.disabled = false;
+                }
+            } catch (e) {
+                alert('Bağlantı hatası oluştu!');
+                btn.innerText = "Başvuruyu Gönder";
+                btn.disabled = false;
+            }
+        }
+
+        init();
+    </script>
+    <div style="text-align: center; font-size: 11px; color: #aaa; margin-bottom: 10px;">Developer: Deniz Şara</div>
+</body>
+
+</html>

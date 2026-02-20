@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yönetim Paneli | Fiziki POS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1a237e;
+            --secondary: #10B981;
+            --bg: #F3F4F6;
+            --surface: #FFFFFF;
+            --text: #1F2937;
+            --border: #E5E7EB;
+            --error: #EF4444;
+            --warning: #F59E0B;
+            --info: #3B82F6;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            font-size: 20px;
+            font-weight: 700;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-menu {
+            padding: 20px 0;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .nav-item {
+            padding: 12px 20px;
+            display: block;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: 0.2s;
+            cursor: pointer;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border-left: 4px solid var(--secondary);
+        }
+
+        .sidebar-footer {
+            padding: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 14px;
+        }
+
+        .logout-btn {
+            color: #fca5a5;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 10px;
+        }
+
+        /* Main Content */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            background: var(--surface);
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 30px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .content {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: var(--surface);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid var(--primary);
+        }
+
+        .stat-card .title {
+            font-size: 13px;
+            color: #6b7280;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .stat-card .value {
+            font-size: 28px;
+            font-weight: 700;
+            margin-top: 10px;
+            color: var(--text);
+        }
+
+        /* Filters */
+        .filters {
+            background: var(--surface);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .form-group label {
+            font-size: 13px;
+            font-weight: 500;
+            color: #4b5563;
+        }
+
+        .form-group input,
+        .form-group select {
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            outline: none;
+        }
+
+        .btn {
+            padding: 9px 16px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            color: white;
+            transition: 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+        }
+
+        .btn-primary:hover {
+            background: #283593;
+        }
+
+        .btn-secondary {
+            background: var(--secondary);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        /* Table */
+        .table-container {
+            background: var(--surface);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            background: #f9fafb;
+            padding: 12px 20px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #4b5563;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border);
+            font-size: 14px;
+            vertical-align: middle;
+        }
+
+        tr:hover {
+            background: #f9fafb;
+            cursor: pointer;
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .badge.alingi {
+            background: #e0e7ff;
+            color: #3730a3;
+        }
+
+        .badge.inceleme {
+            background: #fef3c7;
+            color: #b45309;
+        }
+
+        .badge.degerlendirme {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .badge.ek_bilgi {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .badge.onaylandi {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge.reddedildi {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .modal {
+            background: var(--surface);
+            width: 90%;
+            max-width: 900px;
+            max-height: 90vh;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .modal-header {
+            padding: 20px 30px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-close {
+            cursor: pointer;
+            font-size: 24px;
+            color: #6b7280;
+            border: none;
+            background: none;
+        }
+
+        .modal-body {
+            padding: 30px;
+            overflow-y: auto;
+            flex: 1;
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .modal-body {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .detail-section {
+            margin-bottom: 25px;
+        }
+
+        .detail-section h4 {
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+            color: var(--primary);
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .info-group {
+            margin-bottom: 15px;
+        }
+
+        .info-label {
+            font-size: 12px;
+            color: #6b7280;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .info-val {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .doc-list {
+            list-style: none;
+        }
+
+        .doc-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            margin-bottom: 10px;
+        }
+
+        .doc-item.eksik {
+            border-color: var(--error);
+            background: #fef2f2;
+        }
+
+        .doc-link {
+            color: var(--info);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .action-box {
+            background: #f9fafb;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="sidebar">
+        <div class="sidebar-header">POS Yönetimi</div>
+        <div class="nav-menu">
+            <a class="nav-item active" id="nav-basvuru" onclick="showView('basvuru')">Tüm Başvurular</a>
+            <a class="nav-item" id="nav-kullanici" onclick="showView('kullanici')">Yöneticiler</a>
+        </div>
+        <div class="sidebar-footer">
+            <div id="adminName">Admin User</div>
+            <a class="logout-btn" onclick="logout()">Güvenli Çıkış</a>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="header">
+            <h2 id="pageTitle" style="font-size: 18px; font-weight: 600;">Başvurular</h2>
+            <button class="btn btn-secondary" id="btnExport" onclick="exportData()">Excel İndir</button>
+        </div>
+        <div class="content">
+
+            <!-- Başvurular Görünümü -->
+            <div id="view-basvuru">
+                <div class="stats-grid" id="statsGrid">
+                    <!-- Data from API -->
+                </div>
+
+                <div class="filters">
+                    <div class="form-group">
+                        <label>Başvuru No</label>
+                        <input type="text" id="f_no" placeholder="Örn: POS-2024...">
+                    </div>
+                    <div class="form-group">
+                        <label>Firma Adı</label>
+                        <input type="text" id="f_firma" placeholder="Kelime ara">
+                    </div>
+                    <div class="form-group">
+                        <label>Durum</label>
+                        <select id="f_durum">
+                            <option value="">Tümü</option>
+                            <option value="alingi">Başvuru Alındı</option>
+                            <option value="inceleme">Evrak İnceleme</option>
+                            <option value="ek_bilgi">Evrak Bekleniyor</option>
+                            <option value="degerlendirme">Değerlendirme</option>
+                            <option value="onaylandi">Onaylandı</option>
+                            <option value="reddedildi">Reddedildi</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="loadBasvurular()">Filtrele</button>
+                    <button class="btn btn-outline" onclick="clearFilters()">Temizle</button>
+                </div>
+
+                <div class="table-container">
+                    <table id="dataTable">
+                        <thead>
+                            <tr>
+                                <th>Tarih</th>
+                                <th>Başvuru No</th>
+                                <th>Firma Unvanı</th>
+                                <th>İl</th>
+                                <th>Talep</th>
+                                <th>Durum</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <!-- Data inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Kullanıcılar Görünümü -->
+            <div id="view-kullanici" style="display: none;">
+                <div class="filters" style="justify-content: space-between; align-items: center;">
+                    <div style="font-size: 14px; color: #666;">Sisteme giriş yapabilen yönetici hesapları.</div>
+                    <button class="btn btn-primary" onclick="openUserModal()">+ Yeni Yönetici Ekle</button>
+                </div>
+
+                <div class="table-container">
+                    <table id="usersTable">
+                        <thead>
+                            <tr>
+                                <th>Ad Soyad</th>
+                                <th>Email</th>
+                                <th>Eklenme Tarihi</th>
+                                <th>Durum</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            <!-- Data inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Detail Modal -->
+    <div class="modal-overlay" id="detailModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Başvuru Detayı: <span id="m_basvuru_no" style="color:var(--primary)"></span></h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-left">
+                    <div class="detail-section">
+                        <h4>Firma Bilgileri</h4>
+                        <div class="grid-2">
+                            <div class="info-group"><span class="info-label">Unvan</span><span class="info-val"
+                                    id="m_firma"></span></div>
+                            <div class="info-group"><span class="info-label">Vergi No</span><span class="info-val"
+                                    id="m_vno"></span></div>
+                            <div class="info-group"><span class="info-label">Vergi Dairesi</span><span class="info-val"
+                                    id="m_vd"></span></div>
+                            <div class="info-group"><span class="info-label">Sicil No</span><span class="info-val"
+                                    id="m_sicil"></span></div>
+                            <div class="info-group"><span class="info-label">Faaliyet Alanı</span><span class="info-val"
+                                    id="m_faaliyet"></span></div>
+                            <div class="info-group"><span class="info-label">İl / İlçe</span><span class="info-val"
+                                    id="m_il"></span></div>
+                            <div class="info-group" style="grid-column: 1/-1"><span class="info-label">Adres</span><span
+                                    class="info-val" id="m_adres"></span></div>
+                        </div>
+                    </div>
+
+                    <div class="detail-section">
+                        <h4>İletişim & POS Talebi</h4>
+                        <div class="grid-2">
+                            <div class="info-group"><span class="info-label">Yetkili</span><span class="info-val"
+                                    id="m_yetkili"></span></div>
+                            <div class="info-group"><span class="info-label">Telefon</span><span class="info-val"
+                                    id="m_tel"></span></div>
+                            <div class="info-group"><span class="info-label">Email</span><span class="info-val"
+                                    id="m_email"></span></div>
+                            <div class="info-group"><span class="info-label">Hacim / İşlem</span><span class="info-val"
+                                    id="m_hacim"></span></div>
+                            <div class="info-group"><span class="info-label">POS İsteği</span><span class="info-val"
+                                    id="m_pos"></span></div>
+                        </div>
+                    </div>
+
+                    <div class="detail-section">
+                        <h4>Yüklenen Belgeler</h4>
+                        <ul class="doc-list" id="m_docs"></ul>
+                    </div>
+                </div>
+
+                <div class="modal-right">
+                    <div class="action-box">
+                        <h4 style="margin-bottom:15px;color:var(--text)">Durum Güncelle</h4>
+                        <select id="m_durum_select"
+                            style="width:100%;padding:8px;margin-bottom:10px;border-radius:4px;border:1px solid #ccc">
+                            <option value="alingi">Başvuru Alındı</option>
+                            <option value="inceleme">Evrak İnceleme</option>
+                            <option value="degerlendirme">Değerlendirme</option>
+                            <option value="onaylandi">Onaylandı</option>
+                            <option value="reddedildi">Reddedildi</option>
+                        </select>
+                        <textarea id="m_durum_not" placeholder="Müşteriye gidecek açıklama (Opsiyonel)"
+                            style="width:100%;padding:8px;margin-bottom:10px;border-radius:4px;border:1px solid #ccc;resize:vertical;"
+                            rows="3"></textarea>
+                        <button class="btn btn-primary" style="width:100%" onclick="updateDurum()">Durumu Kaydet &
+                            Bildir</button>
+                    </div>
+
+                    <div class="action-box">
+                        <h4 style="margin-bottom:15px;color:var(--error)">Eksik Evrak Bildirimi</h4>
+                        <p style="font-size:12px;color:#666;margin-bottom:10px;">Aşağıdan eksik veya hatalı belgeleri
+                            seçip müşteriye otomatik SMS ve Email linki gönderebilirsiniz.</p>
+                        <div id="m_eksik_docs"
+                            style="margin-bottom:15px;max-height:150px;overflow-y:auto;background:#fff;border:1px solid #eee;padding:10px;">
+                            <!-- Checkboxes here -->
+                        </div>
+                        <textarea id="m_eksik_not" placeholder="Eksik evrak notu..."
+                            style="width:100%;padding:8px;margin-bottom:10px;border-radius:4px;border:1px solid #ccc;resize:vertical;"
+                            rows="2"></textarea>
+                        <button class="btn" style="width:100%;background:var(--error);color:white"
+                            onclick="sendEksikEvrak()">Eksik Evrak Linki Gönder</button>
+                    </div>
+
+                    <div class="action-box">
+                        <h4 style="margin-bottom:15px;">İç Notlar</h4>
+                        <div id="m_notlar"
+                            style="max-height:150px;overflow-y:auto;font-size:12px;margin-bottom:10px;padding:10px;background:#fff;border:1px solid #eee;">
+                        </div>
+                        <input type="text" id="m_new_not" placeholder="Not yazın..."
+                            style="width:100%;padding:8px;margin-bottom:10px;border:1px solid #ccc;border-radius:4px;">
+                        <button class="btn btn-outline" style="width:100%" onclick="addNot()">Not Ekle (Sadece Admin
+                            Görebilir)</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Create Modal -->
+    <div class="modal-overlay" id="userModal">
+        <div class="modal" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3>Yeni Yönetici Ekle</h3>
+                <button class="modal-close" onclick="closeUserModal()">&times;</button>
+            </div>
+            <div class="modal-body" style="grid-template-columns: 1fr; gap: 15px;">
+                <div class="form-group">
+                    <label>Ad Soyad</label>
+                    <input type="text" id="u_ad" placeholder="Örn: Ahmet Yılmaz">
+                </div>
+                <div class="form-group">
+                    <label>Email Adresi</label>
+                    <input type="email" id="u_email" placeholder="Örn: ahmet@sirket.com">
+                </div>
+                <div class="form-group">
+                    <label>Şifre</label>
+                    <input type="password" id="u_pass" placeholder="Geçici şifre belirleyin">
+                </div>
+                <button class="btn btn-primary" style="width: 100%; margin-top: 10px;" onclick="createUser()">Yöneticiyi
+                    Ekle</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('pos_admin_token');
+        const userStr = localStorage.getItem('pos_admin_user');
+
+        if (!token) {
+            window.location.href = 'login.html';
+        }
+
+        const user = JSON.parse(userStr || '{}');
+        document.getElementById('adminName').innerText = user.ad_soyad || 'Admin';
+
+        let currentActiveId = null;
+        let currentView = 'basvuru';
+
+        function showView(viewId) {
+            currentView = viewId;
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            document.getElementById('nav-' + viewId).classList.add('active');
+
+            if (viewId === 'basvuru') {
+                document.getElementById('view-basvuru').style.display = 'block';
+                document.getElementById('view-kullanici').style.display = 'none';
+                document.getElementById('pageTitle').innerText = 'Başvurular';
+                document.getElementById('btnExport').style.display = 'inline-block';
+                loadDashboard();
+            } else if (viewId === 'kullanici') {
+                document.getElementById('view-basvuru').style.display = 'none';
+                document.getElementById('view-kullanici').style.display = 'block';
+                document.getElementById('pageTitle').innerText = 'Sistem Yöneticileri';
+                document.getElementById('btnExport').style.display = 'none';
+                loadUsers();
+            }
+        }
+
+        const DURUM_LABELS = {
+            alingi: 'Başvuru Alındı',
+            inceleme: 'Evrak İnceleme',
+            degerlendirme: 'Değerlendirme',
+            ek_bilgi: 'Evrak Bekleniyor',
+            onaylandi: 'Onaylandı',
+            reddedildi: 'Reddedildi'
+        };
+
+        const BELGE_TIPLERI = {
+            ticari_sicil: 'Ticari Sicil Gazetesi',
+            imza_sirkuleri: 'İmza Sirküleri',
+            vergi_levhasi: 'Vergi Levhası',
+            kimlik_fotokopisi: 'Kimlik Fotokopisi (Yetkili)',
+            ikametgah: 'İkametgah Belgesi',
+            faaliyet_belgesi: 'Faaliyet Belgesi',
+            gmu_muafiyet: 'GMU ve Muafiyet Belgesi',
+            kira_tapu: 'QNBpay Sözleşme',
+            banka_hesabi: 'Banka Hesap Cüzdanı'
+        };
+
+        async function apiCall(endpoint, options = {}) {
+            options.headers = options.headers || {};
+            options.headers['Authorization'] = `Bearer ${token}`;
+            if (!(options.body instanceof FormData)) {
+                options.headers['Content-Type'] = 'application/json';
+            }
+
+            const res = await fetch('/api/admin' + endpoint, options);
+            if (res.status === 401 || res.status === 403) {
+                logout();
+                return;
+            }
+            return res.json();
+        }
+
+        function logout() {
+            localStorage.removeItem('pos_admin_token');
+            localStorage.removeItem('pos_admin_user');
+            window.location.href = 'login.html';
+        }
+
+        async function loadDashboard() {
+            // Load stats
+            const stats = await apiCall('/stats');
+            if (stats && stats.success) {
+                let eksikCount = 0;
+                let onayCount = 0;
+                stats.durumlar.forEach(d => {
+                    if (d.durum === 'ek_bilgi') eksikCount += d.count;
+                    if (d.durum === 'onaylandi') onayCount += d.count;
+                });
+
+                document.getElementById('statsGrid').innerHTML = `
+                    <div class="stat-card"><div class="title">Toplam Başvuru</div><div class="value">${stats.toplam}</div></div>
+                    <div class="stat-card" style="border-left-color: var(--warning)"><div class="title">Evrak Bekleyen</div><div class="value">${eksikCount}</div></div>
+                    <div class="stat-card" style="border-left-color: var(--secondary)"><div class="title">Onaylanan</div><div class="value">${onayCount}</div></div>
+                    <div class="stat-card" style="border-left-color: var(--info)"><div class="title">Bugün Gelen</div><div class="value">${stats.bugun}</div></div>
+                `;
+            }
+
+            // Load list
+            loadBasvurular();
+        }
+
+        async function loadUsers() {
+            const data = await apiCall('/users');
+            const tbody = document.getElementById('usersTableBody');
+            tbody.innerHTML = '';
+
+            if (data && data.success) {
+                data.data.forEach(u => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td style="font-weight:600;">${u.ad_soyad}</td>
+                        <td>${u.email}</td>
+                        <td>${new Date(u.olusturma_tarihi).toLocaleDateString('tr-TR')}</td>
+                        <td><span class="badge ${u.aktif ? 'onaylandi' : 'reddedildi'}">${u.aktif ? 'Aktif' : 'Pasif'}</span></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+        }
+
+        function openUserModal() {
+            document.getElementById('u_email').value = '';
+            document.getElementById('u_pass').value = '';
+            document.getElementById('u_ad').value = '';
+            document.getElementById('userModal').style.display = 'flex';
+        }
+
+        function closeUserModal() {
+            document.getElementById('userModal').style.display = 'none';
+        }
+
+        async function createUser() {
+            const email = document.getElementById('u_email').value;
+            const password = document.getElementById('u_pass').value;
+            const ad_soyad = document.getElementById('u_ad').value;
+
+            if (!email || !password || !ad_soyad) return alert('Lütfen tüm alanları doldurun.');
+
+            const res = await apiCall('/user', {
+                method: 'POST',
+                body: JSON.stringify({ email, password, ad_soyad })
+            });
+
+            if (res.success) {
+                alert('Yönetici başarıyla eklendi.');
+                closeUserModal();
+                loadUsers();
+            } else {
+                alert(res.message);
+            }
+        }
+
+        function clearFilters() {
+            document.getElementById('f_no').value = '';
+            document.getElementById('f_firma').value = '';
+            document.getElementById('f_durum').value = '';
+            loadBasvurular();
+        }
+
+        async function loadBasvurular() {
+            const params = new URLSearchParams();
+            if (document.getElementById('f_no').value) params.append('basvuru_no', document.getElementById('f_no').value);
+            if (document.getElementById('f_firma').value) params.append('firma', document.getElementById('f_firma').value);
+            if (document.getElementById('f_durum').value) params.append('durum', document.getElementById('f_durum').value);
+
+            const data = await apiCall('/basvurular?' + params.toString());
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            if (data && data.success) {
+                data.data.forEach(b => {
+                    const tr = document.createElement('tr');
+                    tr.onclick = () => openModal(b.id);
+                    tr.innerHTML = `
+                        <td>${new Date(b.basvuru_tarihi).toLocaleDateString('tr-TR')}</td>
+                        <td style="font-weight:600;color:var(--primary)">${b.basvuru_no}</td>
+                        <td>${b.firma_unvani}</td>
+                        <td>${b.il || '-'}</td>
+                        <td>${b.pos_adedi}x ${b.pos_tipi}</td>
+                        <td><span class="badge ${b.durum}">${DURUM_LABELS[b.durum] || b.durum}</span>
+                            ${b.eksik_belge > 0 ? `<br><span style="font-size:11px;color:red">${b.eksik_belge} belge eksik</span>` : ''}
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+        }
+
+        async function exportData() {
+            window.open('/api/admin/export?token=' + token, '_blank');
+        }
+
+        // ================= Modal Handling =================
+
+        async function openModal(id) {
+            currentActiveId = id;
+            const data = await apiCall(`/basvuru/${id}`);
+            if (!data || !data.success) return alert('Veri alınamadı');
+
+            const b = data.basvuru;
+            document.getElementById('m_basvuru_no').innerText = b.basvuru_no;
+            document.getElementById('m_firma').innerText = b.firma_unvani;
+            document.getElementById('m_vno').innerText = b.vergi_no;
+            document.getElementById('m_vd').innerText = b.vergi_dairesi;
+            document.getElementById('m_sicil').innerText = b.ticaret_sicil_no;
+            document.getElementById('m_faaliyet').innerText = b.faaliyet_alani;
+            document.getElementById('m_il').innerText = `${b.il} / ${b.ilce}`;
+            document.getElementById('m_adres').innerText = b.adres;
+
+            document.getElementById('m_yetkili').innerText = b.yetkili_ad_soyad;
+            document.getElementById('m_tel').innerText = b.telefon + (b.alt_telefon ? ' / ' + b.alt_telefon : '');
+            document.getElementById('m_email').innerText = b.email;
+            document.getElementById('m_hacim').innerText = `${b.aylik_ciro} TL / Ort. ${b.ort_islem_tutari} TL`;
+            document.getElementById('m_pos').innerText = `${b.pos_adedi} Adet ${b.pos_tipi}`;
+
+            // Durum update
+            const selectEl = document.getElementById('m_durum_select');
+            if (selectEl.querySelector(`option[value="${b.durum}"]`)) {
+                selectEl.value = b.durum;
+            } else {
+                selectEl.value = 'inceleme'; // Reset to reasonable default if mapped state is different
+            }
+            document.getElementById('m_durum_not').value = b.durum_aciklama || '';
+
+            // Belgeler
+            const docList = document.getElementById('m_docs');
+            const eksikBox = document.getElementById('m_eksik_docs');
+            docList.innerHTML = '';
+            eksikBox.innerHTML = '';
+
+            // Hangi belgelerin mevcut olduğunu map'le
+            const mevcut = {};
+            data.belgeler.forEach(d => {
+                mevcut[d.belge_tipi] = d;
+                const pathParts = d.dosya_yolu ? d.dosya_yolu.split('/') : [];
+                const fileName = pathParts[pathParts.length - 1];
+
+                docList.innerHTML += `
+                    <li class="doc-item ${d.durum === 'eksik' ? 'eksik' : ''}">
+                        <div>
+                            <span style="font-size:14px;font-weight:500">${d.belge_adi}</span>
+                            <div style="font-size:11px;color:#888">${d.durum === 'eksik' ? 'Eksik İşaretlendi' : new Date(d.yukleme_tarihi).toLocaleString()}</div>
+                        </div>
+                        ${d.dosya_yolu ? `<a href="/uploads/pos/${fileName}" target="_blank" class="doc-link">İndir/Gör</a>` : '<span style="color:red;font-size:12px">Bekleniyor</span>'}
+                    </li>
+                `;
+            });
+
+            // Eksik bildirim checkboxları (Sadece ZORUNLU listesindeki tüm belgeler gösterilir, yüklü olsa bile tekrar eksik işareti verilebilsin diye)
+            Object.entries(BELGE_TIPLERI).forEach(([key, val]) => {
+                const isEksikState = mevcut[key] && mevcut[key].durum === 'eksik';
+                eksikBox.innerHTML += `
+                    <label style="display:flex;align-items:center;gap:8px;margin-bottom:5px;font-size:13px;">
+                        <input type="checkbox" name="eksik_cb" value="${key}" ${isEksikState ? 'checked' : ''} ${isEksikState ? 'disabled title="Zaten istendi"' : ''}>
+                        ${val} ${!mevcut[key] ? '<span style="color:red;font-size:10px">(Hiç Yüklenmemiş)</span>' : ''}
+                    </label>
+                `;
+            });
+
+            // Notlar
+            renderNotlar(data.notlar);
+
+            document.getElementById('detailModal').style.display = 'flex';
+        }
+
+        function renderNotlar(notlar) {
+            const nHtml = notlar.map(n => `
+                <div style="border-bottom:1px solid #efefef;padding-bottom:5px;margin-bottom:5px;">
+                    <strong style="color:var(--primary)">${n.ad_soyad}</strong> <span style="color:#aaa">(${new Date(n.olusturma_tarihi).toLocaleString('tr-TR')})</span><br>
+                    ${n.not_metni}
+                </div>
+            `).join('');
+            document.getElementById('m_notlar').innerHTML = nHtml || 'Henüz not yok.';
+        }
+
+        function closeModal() {
+            document.getElementById('detailModal').style.display = 'none';
+            currentActiveId = null;
+        }
+
+        async function updateDurum() {
+            if (!currentActiveId) return;
+            const durum = document.getElementById('m_durum_select').value;
+            const aciklama = document.getElementById('m_durum_not').value;
+
+            if (!confirm('Durumu güncelleyip müşteriye SMS/Email göndermek istiyor musunuz?')) return;
+
+            const res = await apiCall(`/basvuru/${currentActiveId}/durum`, {
+                method: 'PUT',
+                body: JSON.stringify({ durum, aciklama })
+            });
+
+            if (res.success) {
+                alert('Durum güncellendi ve bildirim gönderildi.');
+                loadDashboard();
+            } else alert(res.message);
+        }
+
+        async function sendEksikEvrak() {
+            if (!currentActiveId) return;
+            const checks = document.querySelectorAll('input[name="eksik_cb"]:checked:not(:disabled)');
+            const vals = Array.from(checks).map(c => c.value);
+
+            if (vals.length === 0) return alert('Lütfen en az bir belge seçin (daha önce istenenler hariç).');
+            const aciklama = document.getElementById('m_eksik_not').value;
+
+            if (!confirm('Müşteriye eksik evrak linki içeren SMS/Email gönderilecek. Onaylıyor musunuz?')) return;
+
+            const res = await apiCall(`/basvuru/${currentActiveId}/eksik-evrak`, {
+                method: 'PUT',
+                body: JSON.stringify({ eksik_belgeler: vals, aciklama })
+            });
+
+            if (res.success) {
+                alert('Eksik evrak bildirimi gönderildi!');
+                openModal(currentActiveId); // refresh
+                loadDashboard();
+            } else alert(res.message);
+        }
+
+        async function addNot() {
+            if (!currentActiveId) return;
+            const nInput = document.getElementById('m_new_not');
+            const val = nInput.value.trim();
+            if (!val) return;
+
+            const res = await apiCall(`/basvuru/${currentActiveId}/not`, {
+                method: 'POST',
+                body: JSON.stringify({ not_metni: val })
+            });
+
+            if (res.success) {
+                nInput.value = '';
+                const data = await apiCall(`/basvuru/${currentActiveId}`);
+                renderNotlar(data.notlar);
+            }
+        }
+
+        // Init
+        loadDashboard();
+    </script>
+    <div style="position: fixed; bottom: 10px; right: 20px; font-size: 11px; color: #aaa; z-index: 1000;">Developer:
+        Deniz Şara</div>
+</body>
+
+</html>

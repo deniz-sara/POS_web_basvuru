@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Başvuru Durumu Takip | Fiziki POS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .tracker-container {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 1px solid var(--border);
+        }
+
+        .tracker-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 40px;
+        }
+
+        .track-step {
+            text-align: center;
+            position: relative;
+            padding-top: 20px;
+        }
+
+        .track-step::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            height: 4px;
+            width: 100%;
+            background: var(--border);
+            z-index: 1;
+        }
+
+        .track-step:last-child::before {
+            display: none;
+        }
+
+        .track-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--border);
+            margin: -26px auto 10px;
+            position: relative;
+            z-index: 2;
+            transition: all 0.3s;
+            box-shadow: 0 0 0 4px var(--surface);
+        }
+
+        .track-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-light);
+        }
+
+        .track-step.done::before {
+            background: var(--primary);
+        }
+
+        .track-step.done .track-dot {
+            background: var(--primary);
+        }
+
+        .track-step.done .track-label {
+            color: var(--primary);
+        }
+
+        .track-step.active .track-dot {
+            background: var(--primary);
+            animation: pulse 2s infinite;
+        }
+
+        .track-step.active .track-label {
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        .track-step.error .track-dot {
+            background: var(--error);
+            animation: pulse-error 2s infinite;
+        }
+
+        .track-step.error .track-label {
+            color: var(--error);
+            font-weight: 600;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(79, 70, 229, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(79, 70, 229, 0);
+            }
+        }
+
+        @keyframes pulse-error {
+            0% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+            }
+        }
+
+        .info-card {
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .info-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .info-label {
+            color: var(--text-light);
+        }
+
+        .info-value {
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .alert-box {
+            background: #FEF2F2;
+            border-left: 4px solid var(--error);
+            padding: 15px 20px;
+            border-radius: 4px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        @media (max-width: 600px) {
+            .tracker-grid {
+                display: flex;
+                flex-direction: column;
+                gap: 0;
+            }
+
+            .track-step {
+                text-align: left;
+                padding: 15px 0 15px 30px;
+            }
+
+            .track-step::before {
+                left: 7px;
+                top: 0;
+                width: 2px;
+                height: 100%;
+            }
+
+            .track-step:last-child::before {
+                display: block;
+                height: 50%;
+            }
+
+            .track-dot {
+                margin: 0;
+                position: absolute;
+                left: 0;
+                top: 15px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="form-header"
+                style="text-align: left; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h1 style="font-size: 24px;">Başvuru Durumu</h1>
+                    <p id="firma-name">Yükleniyor...</p>
+                </div>
+                <!-- Status Badge -->
+                <div style="background: var(--bg); padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 14px; color: var(--primary);"
+                    id="status-badge">
+                    Sorgulanıyor
+                </div>
+            </div>
+
+            <div class="info-card">
+                <div class="info-row">
+                    <span class="info-label">Başvuru No</span>
+                    <span class="info-value" id="basvuru-no">...</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Tarih</span>
+                    <span class="info-value" id="tarih">...</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">POS Talebi</span>
+                    <span class="info-value" id="pos-talep">...</span>
+                </div>
+            </div>
+
+            <!-- Error Banner -->
+            <div class="alert-box" id="error-box">
+                <h4 style="color: var(--error); margin-bottom: 5px; font-size: 15px;">Evrak Eksiği Tespit Edildi!</h4>
+                <p style="font-size: 14px; color: #7F1D1D; margin-bottom: 10px;">Aşağıdaki belgelerin güncellenmesi
+                    gerekmektedir:</p>
+                <ul id="eksik-liste" style="margin-left: 20px; font-size: 13px; color: #7F1D1D; margin-bottom: 15px;">
+                </ul>
+                <a href="#" id="update-link" class="btn btn-next" style="padding: 8px 16px; font-size: 13px;">Eksik
+                    Evrakları Yükle</a>
+            </div>
+
+            <!-- Status Tracker -->
+            <div class="tracker-container">
+                <div class="tracker-grid">
+                    <div class="track-step" id="step-alingi">
+                        <div class="track-dot"></div>
+                        <div class="track-label">Başvuru Alındı</div>
+                    </div>
+                    <div class="track-step" id="step-inceleme">
+                        <div class="track-dot"></div>
+                        <div class="track-label">Evrak İnceleme</div>
+                    </div>
+                    <div class="track-step" id="step-degerlendirme">
+                        <div class="track-dot"></div>
+                        <div class="track-label">Değerlendirme</div>
+                    </div>
+                    <div class="track-step" id="step-sonuc">
+                        <div class="track-dot"></div>
+                        <div class="track-label">Sonuç</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 20px;text-align:center;">
+                <p style="font-size:14px;color:var(--text-light)" id="aciklama-text"></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+
+        if (!token) {
+            document.body.innerHTML = '<div style="text-align:center;padding:50px;">Token bulunamadı. Lütfen size gönderilen bağlantıya tıklayın.</div>';
+        } else {
+            fetchStatus();
+        }
+
+        async function fetchStatus() {
+            try {
+                const response = await fetch(`/api/pos/durum/${token}`);
+                const data = await response.json();
+
+                if (!data.success) {
+                    alert('Hata: ' + data.message);
+                    return;
+                }
+
+                const b = data.basvuru;
+
+                document.getElementById('firma-name').innerText = b.firma_unvani;
+                document.getElementById('basvuru-no').innerText = b.basvuru_no;
+                document.getElementById('tarih').innerText = new Date(b.basvuru_tarihi).toLocaleDateString('tr-TR');
+                document.getElementById('pos-talep').innerText = `${b.pos_adedi} Adet (${b.pos_tipi})`;
+                document.getElementById('status-badge').innerText = b.durum_label;
+
+                if (b.durum_aciklama) {
+                    document.getElementById('aciklama-text').innerText = b.durum_aciklama;
+                }
+
+                updateTracker(b.durum);
+
+                if (b.durum === 'ek_bilgi' && b.eksik_belgeler && b.eksik_belgeler.length > 0) {
+                    showErrorBox(b.eksik_belgeler, b.upload_token);
+                }
+
+            } catch (err) {
+                console.error(err);
+                alert('Bağlantı hatası!');
+            }
+        }
+
+        function updateTracker(durum) {
+            const steps = {
+                'alingi': 1,
+                'inceleme': 2,
+                'ek_bilgi': 2,
+                'degerlendirme': 3,
+                'onaylandi': 4,
+                'reddedildi': 4
+            };
+
+            const level = steps[durum] || 1;
+
+            const el1 = document.getElementById('step-alingi');
+            const el2 = document.getElementById('step-inceleme');
+            const el3 = document.getElementById('step-degerlendirme');
+            const el4 = document.getElementById('step-sonuc');
+
+            // Reset
+            [el1, el2, el3, el4].forEach(e => e.className = 'track-step');
+
+            if (level >= 1) el1.classList.add('done');
+            if (level >= 2) el2.classList.add('done');
+            if (level >= 3) el3.classList.add('done');
+            if (level >= 4) el4.classList.add('done');
+
+            // Active State
+            if (durum === 'ek_bilgi') {
+                el2.classList.remove('done');
+                el2.classList.add('error');
+            } else if (level === 1) {
+                el1.classList.add('active');
+            } else if (level === 2) {
+                el2.classList.add('active');
+            } else if (level === 3) {
+                el3.classList.add('active');
+            } else if (durum === 'onaylandi' || durum === 'reddedildi') {
+                el4.classList.add('active');
+                if (durum === 'reddedildi') {
+                    el4.querySelector('.track-label').innerText = 'Reddedildi';
+                    el4.classList.remove('done');
+                    el4.classList.add('error');
+                    document.getElementById('status-badge').style.color = 'var(--error)';
+                } else {
+                    el4.querySelector('.track-label').innerText = 'Onaylandı';
+                    document.getElementById('status-badge').style.color = 'var(--secondary)';
+                }
+            }
+        }
+
+        function showErrorBox(belgeler, token) {
+            const box = document.getElementById('error-box');
+            const liste = document.getElementById('eksik-liste');
+            const link = document.getElementById('update-link');
+
+            liste.innerHTML = '';
+            belgeler.forEach(b => {
+                liste.innerHTML += `<li>${b.belge_adi}</li>`;
+            });
+
+            link.href = `/pos/belge-guncelle.html?token=${token}`;
+            box.style.display = 'block';
+        }
+    </script>
+    <div style="text-align: center; font-size: 11px; color: #aaa; margin-bottom: 10px;">Developer: Deniz Şara</div>
+</body>
+
+</html>

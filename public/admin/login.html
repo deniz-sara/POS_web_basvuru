@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Girişi | Fiziki POS Yönetimi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        body {
+            background-color: #1a237e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-card {
+            max-width: 400px;
+            width: 100%;
+            padding: 40px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .login-card h2 {
+            text-align: center;
+            color: #1a237e;
+            margin-bottom: 30px;
+            font-size: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #4b5563;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: all 0.2s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #1a237e;
+            box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.1);
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 12px;
+            background: #1a237e;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 10px;
+        }
+
+        .btn-login:hover {
+            background: #283593;
+        }
+
+        .error-msg {
+            color: #ef4444;
+            font-size: 14px;
+            text-align: center;
+            margin-top: 15px;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="login-card">
+        <h2>POS Yönetimi Giriş</h2>
+
+        <form id="loginForm" onsubmit="handleLogin(event)">
+            <div class="form-group">
+                <label>E-posta</label>
+                <input type="email" id="email" required placeholder="admin@pos.com" autocomplete="email">
+            </div>
+
+            <div class="form-group">
+                <label>Şifre</label>
+                <input type="password" id="password" required placeholder="••••••••" autocomplete="current-password">
+            </div>
+
+            <button type="submit" class="btn-login" id="loginBtn">Giriş Yap</button>
+            <div id="error" class="error-msg">Email veya şifre hatalı.</div>
+        </form>
+    </div>
+
+    <script>
+        // Check if already logged in
+        if (localStorage.getItem('pos_admin_token')) {
+            window.location.href = 'panel.html';
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const btn = document.getElementById('loginBtn');
+            const errorEl = document.getElementById('error');
+
+            btn.innerHTML = 'Giriş Yapılıyor...';
+            btn.disabled = true;
+            errorEl.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    localStorage.setItem('pos_admin_token', data.token);
+                    localStorage.setItem('pos_admin_user', JSON.stringify(data.admin));
+                    window.location.href = 'panel.html';
+                } else {
+                    errorEl.innerText = data.message;
+                    errorEl.style.display = 'block';
+                    btn.innerHTML = 'Giriş Yap';
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                errorEl.innerText = 'Sunucu bağlantı hatası!';
+                errorEl.style.display = 'block';
+                btn.innerHTML = 'Giriş Yap';
+                btn.disabled = false;
+            }
+        }
+    </script>
+    <div style="text-align: center; font-size: 11px; color: #aaa; margin-bottom: 10px;">Developer: Deniz Şara</div>
+</body>
+
+</html>

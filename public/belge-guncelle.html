@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eksik Evrak Yükleme | Fiziki POS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <div class="container" style="max-width: 600px;">
+        <div class="card">
+            <div class="form-header">
+                <h1 style="color: #E65100;">Eksik Evrak Yükleme</h1>
+                <p>Başvurunuzun değerlendirmeye alınabilmesi için aşağıdaki eksik belgeleri yükleyiniz.</p>
+            </div>
+
+            <div class="info-card" id="basvuru-info" style="display: none;">
+                <div class="info-row">
+                    <span class="info-label">Başvuru No</span>
+                    <span class="info-value" id="basvuru-no">...</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Firma Unvanı</span>
+                    <span class="info-value" id="firma-adi">...</span>
+                </div>
+            </div>
+
+            <form id="uploadForm" style="display: none;">
+                <div class="file-upload-grid" id="fileGrid"
+                    style="grid-template-columns: 1fr; gap: 20px; margin-top: 30px;">
+                    <!-- JS Tarafından Doldurulacak -->
+                </div>
+
+                <div class="btn-group" style="justify-content: center; margin-top: 40px;">
+                    <button type="button" class="btn btn-submit" id="submitBtn" onclick="submitFiles()"
+                        style="width: 100%;" disabled>Evrakları Gönder</button>
+                </div>
+            </form>
+
+            <div id="loading" style="text-align: center; padding: 40px;">Yükleniyor...</div>
+
+            <div id="error-screen" style="display: none; text-align: center; padding: 40px; color: var(--error);">
+                <h2>Hata</h2>
+                <p id="error-msg">Link geçersiz veya süresi dolmuş.</p>
+            </div>
+
+            <div id="success-screen" class="success-state hidden">
+                <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+                    <circle class="checkmark__circle" cx="26" cy="26" r="25" fill="none" />
+                    <path class="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8" />
+                </svg>
+                <h2>Evraklar Yüklendi!</h2>
+                <p>Eksik evraklarınız başarıyla sistemimize iletildi. İnceleme sürecimiz devam edecektir.</p>
+                <div style="margin-top: 30px;">
+                    <a href="#" id="durumLink" class="btn btn-next">Durumunu Takip Et</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        let filesData = {};
+        let eksikBelgeList = [];
+        let basvuruNo = '';
+
+        if (!token) {
+            showError('Token bulunamadı. Lütfen size gönderilen bağlantıya tıklayın.');
+        } else {
+            fetchInfo();
+        }
+
+        function showError(msg) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('error-screen').style.display = 'block';
+            document.getElementById('error-msg').innerText = msg;
+        }
+
+        async function fetchInfo() {
+            try {
+                const response = await fetch('/api/pos/belge-info?token=' + token);
+                const data = await response.json();
+
+                if (!data.success) {
+                    showError(data.message);
+                    return;
+                }
+
+                document.getElementById('loading').style.display = 'none';
+
+                if (data.eksik_belgeler.length === 0) {
+                    showError('Bu başvuru için yüklenmesi beklenen eksik evrak bulunmamaktadır.');
+                    return;
+                }
+
+                document.getElementById('basvuru-info').style.display = 'block';
+                document.getElementById('uploadForm').style.display = 'block';
+
+                document.getElementById('basvuru-no').innerText = data.basvuru.basvuru_no;
+                document.getElementById('firma-adi').innerText = data.basvuru.firma_unvani;
+                basvuruNo = data.basvuru.basvuru_no;
+
+                renderFileGrid(data.eksik_belgeler, data.belge_tipleri);
+
+            } catch (err) {
+                console.error(err);
+                showError('Sunucu bağlantı hatası!');
+            }
+        }
+
+        function renderFileGrid(eksikBelgeler, tipler) {
+            const grid = document.getElementById('fileGrid');
+            eksikBelgeler.forEach(b => {
+                const mask = tipler[b.belge_tipi] || b.belge_tipi;
+                eksikBelgeList.push(b.belge_tipi);
+
+                grid.innerHTML += `
+                    <div class="file-card" id="card_${b.belge_tipi}" style="text-align: left; display: flex; align-items: center; justify-content: space-between;">
+                        <div>
+                            <h4 style="margin: 0;">${mask} <span class="required">*</span></h4>
+                            <div class="desc" style="margin: 4px 0 0 0;">Lütfen belgenin okunaklı olduğundan emin olun.</div>
+                            <span class="file-name" id="name_${b.belge_tipi}" style="margin-top: 5px;">Yüklenmedi</span>
+                        </div>
+                        <div>
+                            <input type="file" id="file_${b.belge_tipi}" name="${b.belge_tipi}" class="file-input" accept=".pdf,.png,.jpg,.jpeg" onchange="handleFile(this, '${b.belge_tipi}')">
+                            <label for="file_${b.belge_tipi}" class="btn btn-prev" style="padding: 8px 16px;">Seç</label>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function handleFile(input, id) {
+            const card = document.getElementById('card_' + id);
+            const nameEl = document.getElementById('name_' + id);
+
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                if (file.size > 15 * 1024 * 1024) {
+                    alert('Dosya boyutu 15MB dan büyük olamaz.');
+                    input.value = '';
+                    return;
+                }
+                card.classList.add('has-file');
+                nameEl.innerText = file.name;
+                nameEl.style.color = 'var(--secondary)';
+                filesData[id] = file;
+            } else {
+                card.classList.remove('has-file');
+                nameEl.innerText = 'Yüklenmedi';
+                nameEl.style.color = 'var(--primary)';
+                delete filesData[id];
+            }
+            checkSubmitStatus();
+        }
+
+        function checkSubmitStatus() {
+            const btnSubmit = document.getElementById("submitBtn");
+            let allValid = true;
+
+            eksikBelgeList.forEach(id => {
+                if (!filesData[id]) allValid = false;
+            });
+
+            if (allValid && eksikBelgeList.length > 0) {
+                btnSubmit.disabled = false;
+                btnSubmit.innerText = "Evrakları Gönder";
+                btnSubmit.style.background = "var(--secondary)";
+            } else {
+                btnSubmit.disabled = true;
+                btnSubmit.innerText = "Tüm Eksik Belgeleri Yükleyin";
+                btnSubmit.style.background = "var(--primary)";
+            }
+        }
+
+        async function submitFiles() {
+            const btn = document.getElementById("submitBtn");
+            btn.innerHTML = 'Gönderiliyor...';
+            btn.disabled = true;
+
+            const data = new FormData();
+            Object.keys(filesData).forEach(key => {
+                data.append(key, filesData[key]);
+            });
+
+            try {
+                const response = await fetch('/api/pos/belge-yukle?token=' + token, {
+                    method: 'POST',
+                    body: data
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    document.getElementById('basvuru-info').style.display = 'none';
+                    document.getElementById('uploadForm').style.display = 'none';
+                    document.getElementById('success-screen').classList.remove('hidden');
+                    document.getElementById('durumLink').href = '/pos/sorgula.html';
+                    document.getElementById('durumLink').innerText = 'Başvuru Durum Sorgula';
+                    document.getElementById('durumLink').style.display = 'inline-block';
+                } else {
+                    alert('Hata: ' + result.message);
+                    btn.innerText = "Evrakları Gönder";
+                    btn.disabled = false;
+                }
+            } catch (e) {
+                alert('Bağlantı hatası oluştu!');
+                btn.innerText = "Evrakları Gönder";
+                btn.disabled = false;
+            }
+        }
+    </script>
+    <div style="text-align: center; font-size: 11px; color: #aaa; margin-bottom: 10px;">Developer: Deniz Şara</div>
+</body>
+
+</html>

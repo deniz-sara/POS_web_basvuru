@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Başvuru Sorgula | Fiziki POS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <div class="container">
+        <div class="form-header">
+            <h1>Başvuru Durumu Sorgula</h1>
+            <p>Başvuru numaranız ve vergi/TC kimlik numaranız ile başvurunuzun güncel durumunu takip edebilirsiniz.</p>
+        </div>
+
+        <div class="card">
+            <div id="error-message"
+                style="display: none; background-color: #FEF2F2; color: #DC2626; padding: 12px; border-radius: 6px; margin-bottom: 20px; text-align: center; border: 1px solid #FCA5A5;">
+            </div>
+
+            <form id="sorgulaForm">
+                <div class="form-group required">
+                    <label>Başvuru Numarası</label>
+                    <input type="text" id="basvuru_no" name="basvuru_no" placeholder="Örn: POS-202602-12345" required>
+                </div>
+
+                <div class="form-group required">
+                    <label>Vergi / TC Kimlik No</label>
+                    <input type="text" id="vergi_no" name="vergi_no" placeholder="Başvuru yaparken girdiğiniz numara"
+                        required>
+                </div>
+
+                <div class="btn-group">
+                    <button type="submit" class="btn btn-next" style="width: 100%; justify-content: center;">
+                        <span>Sorgula</span>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M5 12h14M12 5l7 7-7 7" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div style="text-align: center; margin-top: 20px;">
+                    <a href="basvuru.html"
+                        style="color: var(--primary); text-decoration: none; font-size: 14px; font-weight: 500;">
+                        ← Yeni Başvuru Yap
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('sorgulaForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const btn = e.target.querySelector('button[type="submit"]');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = 'Sorgulanıyor...';
+            btn.disabled = true;
+
+            const errorBox = document.getElementById('error-message');
+            errorBox.style.display = 'none';
+
+            const basvuru_no = document.getElementById('basvuru_no').value;
+            const vergi_no = document.getElementById('vergi_no').value;
+
+            try {
+                const response = await fetch('/api/pos/sorgula', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ basvuru_no, vergi_no })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    window.location.href = `/pos/durum.html?token=${data.token}`;
+                } else {
+                    errorBox.textContent = data.message || 'Sorgulama sırasında bir hata oluştu.';
+                    errorBox.style.display = 'block';
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                console.error(err);
+                errorBox.textContent = 'Sunucu ile bağlantı kurulamadı.';
+                errorBox.style.display = 'block';
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        });
+    </script>
+    <div style="text-align: center; font-size: 11px; color: #aaa; margin-bottom: 10px;">Developer: Deniz Şara</div>
+</body>
+
+</html>
