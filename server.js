@@ -45,10 +45,10 @@ app.use((err, req, res, next) => {
     res.status(err.status || 500).json({ success: false, message: err.message || 'Internal Server Error' });
 });
 
-app.listen(port, () => {
-    console.log(`\n🚀 POS Başvuru Sunucusu çalışıyor: http://localhost:${port}`);
-    console.log(`📋 POS Formu: http://localhost:${port}/pos/basvuru.html`);
-    console.log(`🔐 Admin Paneli: http://localhost:${port}/pos/admin/login.html\n`);
+app.listen(port, '0.0.0.0', () => {
+    console.log(`\n🚀 POS Başvuru Sunucusu çalışıyor: http://0.0.0.0:${port}`);
+    console.log(`📋 POS Formu: http://0.0.0.0:${port}/pos/basvuru.html`);
+    console.log(`🔐 Admin Paneli: http://0.0.0.0:${port}/pos/admin/login.html\n`);
 });
 
 module.exports = app;
