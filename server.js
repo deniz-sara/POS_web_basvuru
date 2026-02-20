@@ -15,6 +15,11 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use('/pos', express.static('public'));
 app.use(express.static('public')); // Also keep root to not break other things if any
 
+// Ana dizine (root) gelen istekleri başvuru formuna yönlendir
+app.get('/', (req, res) => {
+    res.redirect('/pos/basvuru.html');
+});
+
 // Uploads klasörünü statik sun (admin belgeler için)
 app.use('/uploads', express.static('uploads'));
 
