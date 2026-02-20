@@ -9,16 +9,26 @@ const { sendEmail, ADMIN_EMAIL } = require('../services/emailService');
 const { sendSMS, smsTemplates } = require('../services/smsService');
 const { generateUploadToken } = require('../middleware/auth');
 
-// Multer - belge yükleme (başvuru sırasında)
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const dir = path.join(__dirname, '../uploads/pos');
-        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-        cb(null, dir);
-    },
-    filename: (req, file, cb) => {
-        const safe = file.originalname.replace(/[^a-zA-Z0-9.\-]/g, '_');
-        cb(null, `${Date.now()}-${uuidv4().slice(0, 8)}-${safe}`);
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+require('dotenv').config();
+
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+// Multer - belge yükleme (Cloudinary'ye yükleme)
+const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+        folder: 'pos_belgeleri',
+        resource_type: 'auto', // PDF, JPG vb. desteği için
+        public_id: (req, file) => {
+            const safe = file.originalname.replace(/[^a-zA-Z0-9.\-]/g, '_');
+            return `${Date.now()}-${uuidv4().slice(0, 8)}-${safe}`;
+        }
     }
 });
 
@@ -91,26 +101,27 @@ router.post('/basvuru', upload.any(), async (req, res) => {
         const token = uuidv4();
 
         // Başvuruyu kaydet
-        const stmt = db.prepare(`
+        const stmt = `
       INSERT INTO applications (basvuru_no, token, firma_unvani, tabela_adi, sirket_tipi, vergi_no, vergi_dairesi, ticaret_sicil_no,
         faaliyet_alani, adres, il, ilce, yetkili_ad_soyad, telefon, email, alt_telefon,
         pos_adedi, pos_tipi, aylik_ciro, ort_islem_tutari)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-        const result = stmt.run(basvuruNo, token, firma_unvani, tabela_adi || '', sirket_tipi, vergi_no, vergi_dairesi, ticaret_sicil_no,
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+      RETURNING id
+    `;
+        const result = await db.query(stmt, [basvuruNo, token, firma_unvani, tabela_adi || '', sirket_tipi, vergi_no, vergi_dairesi, ticaret_sicil_no,
             faaliyet_alani, adres, il, ilce, yetkili_ad_soyad, telefon, email, alt_telefon || null,
-            parseInt(pos_adedi), pos_tipi, parseFloat(aylik_ciro), parseFloat(ort_islem_tutari));
+            parseInt(pos_adedi), pos_tipi, parseFloat(aylik_ciro), parseFloat(ort_islem_tutari)]);
 
-        const applicationId = result.lastInsertRowid;
+        const applicationId = result.rows[0].id;
 
         // Belgeleri kaydet
-        const docStmt = db.prepare(`
+        const docStmt = `
       INSERT INTO documents (application_id, belge_tipi, belge_adi, dosya_yolu, orijinal_ad, boyut, zorunlu)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `);
-        Object.entries(yuklenenBelgeler).forEach(([tip, file]) => {
-            docStmt.run(applicationId, tip, BELGE_TIPLERI[tip] || tip, file.path, file.originalname, file.size, ZORUNLU_BELGELER.includes(tip) ? 1 : 0);
-        });
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+    `;
+        for (const [tip, file] of Object.entries(yuklenenBelgeler)) {
+            await db.query(docStmt, [applicationId, tip, BELGE_TIPLERI[tip] || tip, file.path, file.originalname, file.size, ZORUNLU_BELGELER.includes(tip) ? 1 : 0]);
+        }
 
         // Email & SMS gönder (async)
         const emailData = { basvuru_no: basvuruNo, token, firma_unvani, yetkili_ad_soyad, telefon, email, pos_adedi, pos_tipi, il, ilce };
@@ -119,8 +130,8 @@ router.post('/basvuru', upload.any(), async (req, res) => {
         sendSMS(telefon, smsTemplates.basvuruAlindi(basvuruNo, token));
 
         // Log notification
-        db.prepare(`INSERT INTO notifications (application_id, tip, alici, konu, icerik) VALUES (?, ?, ?, ?, ?)`).run(applicationId, 'email', email, 'Başvuru Alındı', basvuruNo);
-        db.prepare(`INSERT INTO notifications (application_id, tip, alici, konu, icerik) VALUES (?, ?, ?, ?, ?)`).run(applicationId, 'sms', telefon, 'Başvuru Alındı', basvuruNo);
+        await db.query(`INSERT INTO notifications (application_id, tip, alici, konu, icerik) VALUES ($1, $2, $3, $4, $5)`, [applicationId, 'email', email, 'Başvuru Alındı', basvuruNo]);
+        await db.query(`INSERT INTO notifications (application_id, tip, alici, konu, icerik) VALUES ($1, $2, $3, $4, $5)`, [applicationId, 'sms', telefon, 'Başvuru Alındı', basvuruNo]);
 
         res.json({ success: true, basvuru_no: basvuruNo, token, message: 'Başvurunuz alındı.' });
     } catch (err) {
@@ -130,51 +141,58 @@ router.post('/basvuru', upload.any(), async (req, res) => {
 });
 
 // GET /api/pos/durum/:token - Başvuru durum sorgulama
-router.get('/durum/:token', (req, res) => {
-    const { token } = req.params;
-    const app = db.prepare('SELECT * FROM applications WHERE token = ?').get(token);
-    if (!app) return res.status(404).json({ success: false, message: 'Başvuru bulunamadı.' });
+router.get('/durum/:token', async (req, res) => {
+    try {
+        const { token } = req.params;
+        const appRes = await db.query('SELECT * FROM applications WHERE token = $1', [token]);
+        const app = appRes.rows[0];
+        if (!app) return res.status(404).json({ success: false, message: 'Başvuru bulunamadı.' });
 
-    const docs = db.prepare('SELECT belge_tipi, belge_adi, durum, zorunlu, yukleme_tarihi FROM documents WHERE application_id = ?').all(app.id);
-    const eksikDocs = docs.filter(d => d.durum === 'eksik');
+        const docsRes = await db.query('SELECT belge_tipi, belge_adi, durum, zorunlu, yukleme_tarihi FROM documents WHERE application_id = $1', [app.id]);
+        const docs = docsRes.rows;
+        const eksikDocs = docs.filter(d => d.durum === 'eksik');
 
-    // Upload token oluştur (belge güncelleme için)
-    let uploadToken = null;
-    if (eksikDocs.length > 0) {
-        uploadToken = generateUploadToken(app.id, eksikDocs.map(d => d.belge_tipi));
-    }
-
-    const durumLabels = {
-        alingi: 'Başvuru Alındı',
-        inceleme: 'Evrak İnceleme',
-        degerlendirme: 'Değerlendirme',
-        onaylandi: 'Onaylandı',
-        reddedildi: 'Reddedildi',
-        ek_bilgi: 'Ek Bilgi / Evrak Bekleniyor'
-    };
-
-    res.json({
-        success: true,
-        basvuru: {
-            basvuru_no: app.basvuru_no,
-            firma_unvani: app.firma_unvani,
-            yetkili_ad_soyad: app.yetkili_ad_soyad,
-            durum: app.durum,
-            durum_label: durumLabels[app.durum] || app.durum,
-            durum_aciklama: app.durum_aciklama,
-            basvuru_tarihi: app.basvuru_tarihi,
-            guncelleme_tarihi: app.guncelleme_tarihi,
-            belgeler: docs,
-            eksik_belgeler: eksikDocs,
-            upload_token: uploadToken,
-            pos_adedi: app.pos_adedi,
-            pos_tipi: app.pos_tipi
+        // Upload token oluştur (belge güncelleme için)
+        let uploadToken = null;
+        if (eksikDocs.length > 0) {
+            uploadToken = generateUploadToken(app.id, eksikDocs.map(d => d.belge_tipi));
         }
-    });
+
+        const durumLabels = {
+            alingi: 'Başvuru Alındı',
+            inceleme: 'Evrak İnceleme',
+            degerlendirme: 'Değerlendirme',
+            onaylandi: 'Onaylandı',
+            reddedildi: 'Reddedildi',
+            ek_bilgi: 'Ek Bilgi / Evrak Bekleniyor'
+        };
+
+        res.json({
+            success: true,
+            basvuru: {
+                basvuru_no: app.basvuru_no,
+                firma_unvani: app.firma_unvani,
+                yetkili_ad_soyad: app.yetkili_ad_soyad,
+                durum: app.durum,
+                durum_label: durumLabels[app.durum] || app.durum,
+                durum_aciklama: app.durum_aciklama,
+                basvuru_tarihi: app.basvuru_tarihi,
+                guncelleme_tarihi: app.guncelleme_tarihi,
+                belgeler: docs,
+                eksik_belgeler: eksikDocs,
+                upload_token: uploadToken,
+                pos_adedi: app.pos_adedi,
+                pos_tipi: app.pos_tipi
+            }
+        });
+    } catch (err) {
+        console.error('Durum sorgulama hatası:', err);
+        res.status(500).json({ success: false, message: 'Sunucu hatası oluştu.' });
+    }
 });
 
 // POST /api/pos/sorgula - Başvuru no ve Vergi no ile sorgulama
-router.post('/sorgula', (req, res) => {
+router.post('/sorgula', async (req, res) => {
     const { basvuru_no, vergi_no } = req.body;
 
     if (!basvuru_no || !vergi_no) {
@@ -182,7 +200,8 @@ router.post('/sorgula', (req, res) => {
     }
 
     try {
-        const app = db.prepare('SELECT token FROM applications WHERE basvuru_no = ? AND (vergi_no = ? OR ticaret_sicil_no = ?)').get(basvuru_no.trim(), vergi_no.trim(), vergi_no.trim());
+        const appRes = await db.query('SELECT token FROM applications WHERE basvuru_no = $1 AND (vergi_no = $2 OR ticaret_sicil_no = $3)', [basvuru_no.trim(), vergi_no.trim(), vergi_no.trim()]);
+        const app = appRes.rows[0];
 
         if (!app) {
             return res.status(404).json({ success: false, message: 'Bu bilgilere ait bir başvuru bulunamadı.' });
