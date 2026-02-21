@@ -19,6 +19,12 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
+console.log('--- CLOUDINARY ENV VARIABLES CHECK ---');
+console.log('CLOUD_NAME Loaded:', !!process.env.CLOUDINARY_CLOUD_NAME);
+console.log('API_KEY Loaded:', !!process.env.CLOUDINARY_API_KEY);
+console.log('API_SECRET Loaded:', !!process.env.CLOUDINARY_API_SECRET);
+console.log('--------------------------------------');
+
 // Multer - belge yükleme (Cloudinary'ye yükleme)
 const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
