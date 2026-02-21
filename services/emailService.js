@@ -2,13 +2,13 @@ const nodemailer = require('nodemailer');
 
 // SMTP Ayarları - .env veya environment variable ile configure edilmeli
 const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.SMTP_PORT) || 587,
-    secure: false,
-    auth: {
-        user: process.env.SMTP_USER || 'your-email@gmail.com',
-        pass: process.env.SMTP_PASS || 'your-app-password'
-    }
+  host: process.env.SMTP_HOST || 'smtp.gmail.com',
+  port: parseInt(process.env.SMTP_PORT) || 587,
+  secure: false,
+  auth: {
+    user: process.env.SMTP_USER || 'your-email@gmail.com',
+    pass: process.env.SMTP_PASS || 'your-app-password'
+  }
 });
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'basvuru-ekibi@sirketiniz.com';
@@ -16,9 +16,9 @@ const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 
 // Email şablonları
 const templates = {
-    basvuruAlindiMusteri: (data) => ({
-        subject: `POS Başvurunuz Alındı - Başvuru No: ${data.basvuru_no}`,
-        html: `
+  basvuruAlindiMusteri: (data) => ({
+    subject: `POS Başvurunuz Alındı - Başvuru No: ${data.basvuru_no}`,
+    html: `
       <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8f9fa;padding:20px;border-radius:10px">
         <div style="background:linear-gradient(135deg,#1a237e,#283593);padding:25px;border-radius:8px 8px 0 0;text-align:center">
           <h1 style="color:#fff;margin:0;font-size:22px">🏦 POS Başvurusu Alındı</h1>
@@ -41,11 +41,11 @@ const templates = {
         </div>
       </div>
     `
-    }),
+  }),
 
-    basvuruAlindiAdmin: (data) => ({
-        subject: `[YENİ BAŞVURU] ${data.firma_unvani} - ${data.basvuru_no}`,
-        html: `
+  basvuruAlindiAdmin: (data) => ({
+    subject: `[YENİ BAŞVURU] ${data.firma_unvani} - ${data.basvuru_no}`,
+    html: `
       <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
         <div style="background:#1a237e;padding:20px;text-align:center">
           <h2 style="color:#fff;margin:0">Yeni POS Başvurusu</h2>
@@ -66,11 +66,11 @@ const templates = {
         </div>
       </div>
     `
-    }),
+  }),
 
-    eksikEvrak: (data) => ({
-        subject: `[EVRAK EKSİK] POS Başvurunuz - ${data.basvuru_no}`,
-        html: `
+  eksikEvrak: (data) => ({
+    subject: `[EVRAK EKSİK] POS Başvurunuz - ${data.basvuru_no}`,
+    html: `
       <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8f9fa;padding:20px;border-radius:10px">
         <div style="background:linear-gradient(135deg,#e65100,#bf360c);padding:25px;border-radius:8px 8px 0 0;text-align:center">
           <h1 style="color:#fff;margin:0;font-size:22px">⚠️ Eksik Evrak Bildirimi</h1>
@@ -93,11 +93,11 @@ const templates = {
         </div>
       </div>
     `
-    }),
+  }),
 
-    durumGuncellendi: (data) => ({
-        subject: `POS Başvurunuz Güncellendi - ${data.basvuru_no}`,
-        html: `
+  durumGuncellendi: (data) => ({
+    subject: `POS Başvurunuz Güncellendi - ${data.basvuru_no}`,
+    html: `
       <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8f9fa;padding:20px;border-radius:10px">
         <div style="background:linear-gradient(135deg,#1b5e20,#2e7d32);padding:25px;border-radius:8px 8px 0 0;text-align:center">
           <h1 style="color:#fff;margin:0;font-size:22px">📋 Başvuru Durumu Güncellendi</h1>
@@ -117,11 +117,11 @@ const templates = {
         </div>
       </div>
     `
-    }),
+  }),
 
-    belgeYuklendi: (data) => ({
-        subject: `[EVRAK GÜNCELLENDİ] ${data.firma_unvani} - ${data.basvuru_no}`,
-        html: `
+  belgeYuklendi: (data) => ({
+    subject: `[EVRAK GÜNCELLENDİ] ${data.firma_unvani} - ${data.basvuru_no}`,
+    html: `
       <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
         <div style="background:#1b5e20;padding:20px;text-align:center">
           <h2 style="color:#fff;margin:0">✅ Evrak Güncellendi</h2>
@@ -137,24 +137,28 @@ const templates = {
         </div>
       </div>
     `
-    })
+  })
 };
 
 async function sendEmail(to, templateName, data) {
+  console.log(`[EMAIL] '${templateName}' şablonu ile ${to} adresine gönderim başlıyor...`);
+  try {
     const template = templates[templateName](data);
-    try {
-        await transporter.sendMail({
-            from: `"POS Başvuru Sistemi" <${process.env.SMTP_USER || 'noreply@pos.com'}>`,
-            to,
-            subject: template.subject,
-            html: template.html
-        });
-        console.log(`✅ Email gönderildi: ${templateName} → ${to}`);
-        return { success: true };
-    } catch (err) {
-        console.error(`❌ Email gönderilemedi: ${err.message}`);
-        return { success: false, error: err.message };
-    }
+    console.log(`[EMAIL] Şablon hazırlandı. SMTP ile bağlantı kuruluyor...`);
+
+    const info = await transporter.sendMail({
+      from: `"POS Başvuru Sistemi" <${process.env.SMTP_USER || 'noreply@pos.com'}>`,
+      to,
+      subject: template.subject,
+      html: template.html
+    });
+    console.log(`✅ Email başarıyla gönderildi: ${templateName} → ${to} | ID: ${info.messageId}`);
+    return { success: true };
+  } catch (err) {
+    console.error(`❌ Email GÖNDERİLEMEDİ (${templateName} -> ${to}):`, err.message);
+    if (err.response) console.error(`Detay:`, err.response);
+    return { success: false, error: err.message };
+  }
 }
 
 module.exports = { sendEmail, ADMIN_EMAIL };
