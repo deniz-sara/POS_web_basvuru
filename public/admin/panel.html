@@ -631,7 +631,6 @@
                                 <th>Ad Soyad</th>
                                 <th>Email</th>
                                 <th>Son Giriş</th>
-                                <th>Eklenme Tarihi</th>
                                 <th>Durum</th>
                                 <th>İşlemler</th>
                             </tr>
@@ -949,7 +948,6 @@
                         <td style="font-weight:600;">${u.ad_soyad}</td>
                         <td>${u.email}</td>
                         <td style="font-size:12px;">${girisMetni}</td>
-                        <td>${new Date(u.olusturma_tarihi).toLocaleDateString('tr-TR')}</td>
                         <td><span class="badge ${u.aktif ? 'onaylandi' : 'reddedildi'}">${u.aktif ? 'Aktif' : 'Pasif'}</span></td>
                         <td>
                             <button class="btn btn-outline" style="padding:4px 8px; font-size:11px;" onclick="openUserModal(${u.id}, '${u.email}', '${u.ad_soyad}')">Düzenle</button>

@@ -68,8 +68,8 @@ router.get('/basvurular', authMiddleware, async (req, res) => {
         if (req.query.il) { query += ` AND a.il = $${paramCount++}`; params.push(req.query.il); }
         if (req.query.basvuru_no) { query += ` AND a.basvuru_no ILIKE $${paramCount++}`; params.push(`%${req.query.basvuru_no}%`); }
         if (req.query.firma) { query += ` AND a.firma_unvani ILIKE $${paramCount++}`; params.push(`%${req.query.firma}%`); }
-        if (req.query.tarih_baslangic) { query += ` AND a.basvuru_tarihi::date >= $${paramCount++}::date`; params.push(req.query.tarih_baslangic); }
-        if (req.query.tarih_bitis) { query += ` AND a.basvuru_tarihi::date <= $${paramCount++}::date`; params.push(req.query.tarih_bitis); }
+        if (req.query.tarih_baslangic) { query += ` AND (a.basvuru_tarihi AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Istanbul')::date >= $${paramCount++}::date`; params.push(req.query.tarih_baslangic); }
+        if (req.query.tarih_bitis) { query += ` AND (a.basvuru_tarihi AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Istanbul')::date <= $${paramCount++}::date`; params.push(req.query.tarih_bitis); }
 
         query += ' GROUP BY a.id ORDER BY a.basvuru_tarihi DESC';
 
@@ -386,10 +386,14 @@ router.delete('/basvuru/:id', authMiddleware, async (req, res) => {
         await db.query('DELETE FROM documents WHERE application_id = $1', [req.params.id]);
         await db.query('DELETE FROM application_notes WHERE application_id = $1', [req.params.id]);
         await db.query('DELETE FROM notifications WHERE application_id = $1', [req.params.id]);
+
+        // Foreign key hatasını önlemek için geçmiş loglardaki basvuru bağlantısını null yapıyoruz
+        await db.query('UPDATE admin_logs SET basvuru_id = NULL WHERE basvuru_id = $1', [req.params.id]);
+
         await db.query('DELETE FROM applications WHERE id = $1', [req.params.id]);
 
-        await db.query(`INSERT INTO admin_logs (admin_id, islem_tipi, basvuru_id, detay) VALUES ($1, $2, $3, $4)`,
-            [req.admin.id, 'Başvuru Silme', req.params.id, `${appRes.rows[0].basvuru_no} numaralı "${appRes.rows[0].firma_unvani}" firmasına ait başvuru sistemden kalıcı olarak silindi.`]);
+        await db.query(`INSERT INTO admin_logs (admin_id, islem_tipi, basvuru_id, detay) VALUES ($1, $2, NULL, $3)`,
+            [req.admin.id, 'Başvuru Silme', `${appRes.rows[0].basvuru_no} numaralı "${appRes.rows[0].firma_unvani}" firmasına ait başvuru sistemden kalıcı olarak silindi.`]);
 
         res.json({ success: true, message: 'Başvuru silindi.' });
     } catch (err) {
@@ -406,7 +410,7 @@ router.get('/logs', authMiddleware, async (req, res) => {
             FROM admin_logs l 
             LEFT JOIN admin_users u ON l.admin_id = u.id 
             LEFT JOIN applications a ON l.basvuru_id = a.id 
-            ORDER BY l.tarih DESC LIMIT 300
+            ORDER BY l.id DESC LIMIT 300
         `);
         res.json({ success: true, data: logsRes.rows });
     } catch (err) {
