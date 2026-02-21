@@ -26,13 +26,16 @@
             <form id="sorgulaForm">
                 <div class="form-group required">
                     <label>Başvuru Numarası</label>
-                    <input type="text" id="basvuru_no" name="basvuru_no" placeholder="Örn: POS-202602-12345" required>
+                    <input type="text" id="basvuru_no" name="basvuru_no" placeholder="Örn: POS-202602-12345" required
+                        oninvalid="this.setCustomValidity('Lütfen başvuru numaranızı girin.')"
+                        oninput="this.setCustomValidity('')">
                 </div>
 
                 <div class="form-group required">
                     <label>Vergi / TC Kimlik No</label>
                     <input type="text" id="vergi_no" name="vergi_no" placeholder="Başvuru yaparken girdiğiniz numara"
-                        required>
+                        required oninvalid="this.setCustomValidity('Lütfen vergi veya TC kimlik numaranızı girin.')"
+                        oninput="this.setCustomValidity('')">
                 </div>
 
                 <div class="btn-group">
@@ -96,8 +99,10 @@
             }
         });
     </script>
-    <div style="text-align: center; font-size: 11px; color: #aaa; margin-bottom: 10px;">Bu site bir demo uygulamasıdır.
-        Telif hakları ihlali söz konusu değildir.</div>
+    <div style="text-align: center; font-size: 13px; color: #888; margin-bottom: 10px; padding: 0 10px;">
+        Bu site bir demo uygulamasıdır. Telif hakları ihlali söz konusu değildir.<br>
+        Geliştirici: Deniz Şara
+    </div>
 </body>
 
 </html>
