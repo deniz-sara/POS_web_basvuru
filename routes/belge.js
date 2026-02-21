@@ -105,18 +105,22 @@ router.post('/belge-yukle', upload.any(), async (req, res) => {
                     return res.status(400).json({ success: false, message: `${file.originalname} isimli dosya boş (0 KB) görünüyor. Lütfen dosyanın bozuk olmadığından emin olun.` });
                 }
 
-                const result = await new Promise((resolve, reject) => {
-                    const uploadStream = cloudinary.uploader.upload_stream({
-                        folder: 'pos_guncellemeleri',
-                        resource_type: 'raw',
-                        public_id: pubId
-                    }, (error, res) => {
-                        if (error) reject(error);
-                        else resolve(res);
+                if (ext === '.pdf') {
+                    secureUrl = `data:application/pdf;base64,${file.buffer.toString('base64')}`;
+                } else {
+                    const result = await new Promise((resolve, reject) => {
+                        const uploadStream = cloudinary.uploader.upload_stream({
+                            folder: 'pos_guncellemeleri',
+                            resource_type: 'image',
+                            public_id: pubId
+                        }, (error, res) => {
+                            if (error) reject(error);
+                            else resolve(res);
+                        });
+                        streamifier.createReadStream(file.buffer).pipe(uploadStream);
                     });
-                    streamifier.createReadStream(file.buffer).pipe(uploadStream);
-                });
-                secureUrl = result.secure_url;
+                    secureUrl = result.secure_url;
+                }
             } catch (upErr) {
                 console.error("Cloudinary upload hatası (belge):", upErr);
                 return res.status(500).json({ success: false, message: 'Hata detayı: ' + (upErr.message || JSON.stringify(upErr)) });

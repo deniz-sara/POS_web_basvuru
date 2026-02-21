@@ -88,12 +88,41 @@ router.get('/basvuru/:id', authMiddleware, async (req, res) => {
         const app = appRes.rows[0];
         if (!app) return res.status(404).json({ success: false, message: 'Başvuru bulunamadı.' });
 
-        const docsRes = await db.query('SELECT * FROM documents WHERE application_id = $1', [app.id]);
+        const docsRes = await db.query(`
+            SELECT id, application_id, belge_tipi, belge_adi, orijinal_ad, boyut, durum, yukleme_tarihi,
+            CASE WHEN dosya_yolu LIKE 'data:%' THEN '/api/admin/dosya-indir/' || id ELSE dosya_yolu END as dosya_yolu
+            FROM documents WHERE application_id = $1
+        `, [app.id]);
         const notesRes = await db.query('SELECT n.*, u.ad_soyad FROM application_notes n LEFT JOIN admin_users u ON n.admin_id = u.id WHERE n.application_id = $1 ORDER BY n.olusturma_tarihi DESC', [app.id]);
 
         res.json({ success: true, basvuru: app, belgeler: docsRes.rows, notlar: notesRes.rows });
     } catch (err) {
         res.status(500).json({ success: false, message: 'Sunucu hatası' });
+    }
+});
+
+// GET /api/admin/dosya-indir/:id - Veritabanındaki Base64 dosyayı indir
+router.get('/dosya-indir/:id', authMiddleware, async (req, res) => {
+    try {
+        const docRes = await db.query('SELECT dosya_yolu, orijinal_ad FROM documents WHERE id = $1', [req.params.id]);
+        const doc = docRes.rows[0];
+        if (!doc || !doc.dosya_yolu || !doc.dosya_yolu.startsWith('data:')) {
+            return res.status(404).send('Dosya bulunamadı veya bulutta saklanıyor.');
+        }
+
+        const matches = doc.dosya_yolu.match(/^data:(.+?);base64,(.*)$/);
+        if (!matches || matches.length !== 3) {
+            return res.status(400).send('Geçersiz dosya verisi.');
+        }
+
+        const mimeType = matches[1];
+        const buffer = Buffer.from(matches[2], 'base64');
+
+        res.setHeader('Content-Type', mimeType);
+        res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(doc.orijinal_ad)}"`);
+        res.send(buffer);
+    } catch (err) {
+        res.status(500).send('Sunucu hatası');
     }
 });
 

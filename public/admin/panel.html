@@ -1002,7 +1002,11 @@
 
                 let fileUrl = '';
                 if (d.dosya_yolu) {
-                    fileUrl = d.dosya_yolu.startsWith('http') ? d.dosya_yolu : `/api/admin/dosya/${d.dosya_yolu.split(/[\\/]/).pop()}`;
+                    if (d.dosya_yolu.startsWith('http') || d.dosya_yolu.startsWith('/')) {
+                        fileUrl = d.dosya_yolu;
+                    } else {
+                        fileUrl = `/api/admin/dosya/${d.dosya_yolu.split(/[\\/]/).pop()}`;
+                    }
 
                     // Cloudinary uzantı eksikliği çözümü: orijinal uzantıyı URL sonuna ekle
                     if (fileUrl.includes('cloudinary.com') && d.orijinal_ad) {

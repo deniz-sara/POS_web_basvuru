@@ -135,20 +135,26 @@ router.post('/basvuru', (req, res) => {
                             return res.status(400).json({ success: false, message: `${f.originalname} isimli dosya boş (0 KB) görünüyor. Lütfen dosyanın bozuk olmadığından emin olun (iCloud veya cihazda tam yüklü olmalı).` });
                         }
 
-                        const result = await new Promise((resolve, reject) => {
-                            const uploadStream = cloudinary.uploader.upload_stream({
-                                folder: 'pos_belgeleri',
-                                resource_type: 'raw',
-                                public_id: pubId
-                            }, (error, res) => {
-                                if (error) reject(error);
-                                else resolve(res);
+                        let finalUrl = '';
+                        if (ext === '.pdf') {
+                            finalUrl = `data:application/pdf;base64,${f.buffer.toString('base64')}`;
+                        } else {
+                            const result = await new Promise((resolve, reject) => {
+                                const uploadStream = cloudinary.uploader.upload_stream({
+                                    folder: 'pos_belgeleri',
+                                    resource_type: 'image',
+                                    public_id: pubId
+                                }, (error, res) => {
+                                    if (error) reject(error);
+                                    else resolve(res);
+                                });
+                                streamifier.createReadStream(f.buffer).pipe(uploadStream);
                             });
-                            streamifier.createReadStream(f.buffer).pipe(uploadStream);
-                        });
+                            finalUrl = result.secure_url;
+                        }
 
                         yuklenenBelgeler[f.fieldname] = {
-                            path: result.secure_url,
+                            path: finalUrl,
                             originalname: f.originalname,
                             size: f.size
                         };
