@@ -50,7 +50,7 @@ const smsTemplates = {
         `POS basvurunuz alindi. Basvuru No: ${basvuruNo}. Takip icin: ${BASE_URL}/pos/durum.html?token=${token}`,
 
     eksikEvrak: (basvuruNo, token) =>
-        `POS basvurunuzda (${basvuruNo}) eksik evrak tespit edildi. Yuklemek icin: ${BASE_URL}/pos/belge-guncelle?token=${token}`,
+        `POS basvurunuzda (${basvuruNo}) eksik evrak tespit edildi. Yuklemek icin: ${BASE_URL}/pos/belge-guncelle.html?token=${token}`,
 
     durumGuncellendi: (basvuruNo, durum) =>
         `POS basvurunuz (${basvuruNo}) guncellendi. Yeni durum: ${durum}. Detay icin uygulamaya giriniz.`
