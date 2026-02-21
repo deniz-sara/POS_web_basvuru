@@ -640,36 +640,32 @@
                         </tbody>
                     </table>
                 </div>
-            </div>
-        </div>
+            </div> <!-- İşlem Logları Görünümü -->
+            <div id="view-logs" style="display: none;">
+                <div class="filters" style="justify-content: space-between; align-items: center;">
+                    <div style="font-size: 14px; color: #666;">Sistemdeki önemli yönetici işlemlerinin geçmişi.</div>
+                    <button class="btn btn-outline" onclick="loadLogs()">Yenile</button>
+                </div>
 
-        <!-- İşlem Logları Görünümü -->
-        <div id="view-logs" style="display: none;">
-            <div class="filters" style="justify-content: space-between; align-items: center;">
-                <div style="font-size: 14px; color: #666;">Sistemdeki önemli yönetici işlemlerinin geçmişi.</div>
-                <button class="btn btn-outline" onclick="loadLogs()">Yenile</button>
-            </div>
-
-            <div class="table-container">
-                <table id="logsTable">
-                    <thead>
-                        <tr>
-                            <th>Tarih</th>
-                            <th>Yönetici</th>
-                            <th>İşlem Tipi</th>
-                            <th>Başvuru No</th>
-                            <th>Detay</th>
-                        </tr>
-                    </thead>
-                    <tbody id="logsTableBody">
-                        <!-- Data inserted here -->
-                    </tbody>
-                </table>
+                <div class="table-container">
+                    <table id="logsTable">
+                        <thead>
+                            <tr>
+                                <th>Tarih</th>
+                                <th>Yönetici</th>
+                                <th>İşlem Tipi</th>
+                                <th>Başvuru No</th>
+                                <th>Detay</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logsTableBody">
+                            <!-- Data inserted here -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
-    </div>
-
     <!-- Detail Modal -->
     <div class="modal-overlay" id="detailModal">
         <div class="modal">
@@ -1082,7 +1078,7 @@
             document.getElementById('m_yetkili').innerText = b.yetkili_ad_soyad;
             document.getElementById('m_tel').innerText = b.telefon + (b.alt_telefon ? ' / ' + b.alt_telefon : '');
             document.getElementById('m_email').innerText = b.email;
-            document.getElementById('m_hacim').innerText = `${b.aylik_ciro} TL`;
+            document.getElementById('m_hacim').innerText = `${Number(b.aylik_ciro).toLocaleString('tr-TR')} TL`;
             document.getElementById('m_pos').innerText = `${b.pos_adedi} Adet ${b.pos_tipi}`;
 
             // Cihaz Detayları parse
