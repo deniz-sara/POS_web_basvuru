@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const db = require('../database/db');
 const JWT_SECRET = process.env.JWT_SECRET || 'pos_basvuru_gizli_anahtar_2024';
 
 const authMiddleware = (req, res, next) => {
@@ -13,6 +14,12 @@ const authMiddleware = (req, res, next) => {
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
         req.admin = decoded;
+
+        // Kullanıcının online kalması için son_giriş tarihini asenkron olarak arka planda sürekli güncelle
+        if (decoded && decoded.id) {
+            db.query('UPDATE admin_users SET son_giris_tarihi = CURRENT_TIMESTAMP WHERE id = $1', [decoded.id]).catch(() => { });
+        }
+
         next();
     } catch (err) {
         return res.status(403).json({ success: false, message: 'Geçersiz veya süresi dolmuş token.' });
