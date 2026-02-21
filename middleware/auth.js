@@ -3,7 +3,8 @@ const JWT_SECRET = process.env.JWT_SECRET || 'pos_basvuru_gizli_anahtar_2024';
 
 const authMiddleware = (req, res, next) => {
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    // Dosya indirme (Excel vb.) gibi window.open ile gelen GET istekleri için header yerine query parameresi desteği
+    const token = (authHeader && authHeader.split(' ')[1]) || req.query.token;
 
     if (!token) {
         return res.status(401).json({ success: false, message: 'Yetkisiz erişim. Token gerekli.' });
