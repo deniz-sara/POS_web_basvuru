@@ -118,7 +118,7 @@ router.post('/belge-yukle', upload.any(), async (req, res) => {
             } catch (upErr) {
                 console.error("Cloudinary upload hatası (belge):", upErr);
                 req.files.forEach(f => { if (fs.existsSync(f.path)) fs.unlinkSync(f.path); });
-                return res.status(500).json({ success: false, message: 'Dosya buluta yüklenirken hata oluştu.' });
+                return res.status(500).json({ success: false, message: 'Hata detayı: ' + (upErr.message || JSON.stringify(upErr)) });
             }
 
             const existingRes = await db.query('SELECT id FROM documents WHERE application_id = $1 AND belge_tipi = $2', [app.id, belge_tipi]);

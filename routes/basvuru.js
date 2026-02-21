@@ -154,7 +154,7 @@ router.post('/basvuru', (req, res) => {
                     } catch (upErr) {
                         console.error("Cloudinary upload hatası:", upErr);
                         req.files.forEach(file => { if (fs.existsSync(file.path)) fs.unlinkSync(file.path); });
-                        return res.status(500).json({ success: false, message: 'Dosya buluta yüklenirken hata oluştu.' });
+                        return res.status(500).json({ success: false, message: 'Hata detayı: ' + (upErr.message || JSON.stringify(upErr)) });
                     }
                 }
             }
