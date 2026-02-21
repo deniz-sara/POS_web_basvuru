@@ -152,15 +152,19 @@ router.post('/basvuru', upload.any(), async (req, res) => {
             await db.query(docStmt, [applicationId, tip, BELGE_TIPLERI[tip] || tip, file.path, file.originalname, file.size, ZORUNLU_BELGELER.includes(tip) ? 1 : 0]);
         }
 
-        // Email & SMS gönder (async)
-        const emailData = { basvuru_no: basvuruNo, token, firma_unvani, yetkili_ad_soyad, telefon, email, pos_adedi, pos_tipi, il, ilce };
-        sendEmail(email, 'basvuruAlindiMusteri', emailData);
-        sendEmail(ADMIN_EMAIL, 'basvuruAlindiAdmin', emailData);
-        sendSMS(telefon, smsTemplates.basvuruAlindi(basvuruNo, token));
+        // Email & SMS gönder (async, hatalar ana akışı bozmasın diye try-catch içinde)
+        try {
+            const emailData = { basvuru_no: basvuruNo, token, firma_unvani, yetkili_ad_soyad, telefon, email, pos_adedi, pos_tipi, il, ilce };
+            sendEmail(email, 'basvuruAlindiMusteri', emailData).catch(e => console.error('Müşteri email hatası:', e));
+            sendEmail(ADMIN_EMAIL, 'basvuruAlindiAdmin', emailData).catch(e => console.error('Admin email hatası:', e));
+            sendSMS(telefon, smsTemplates.basvuruAlindi(basvuruNo, token)).catch(e => console.error('SMS hatası:', e));
 
-        // Log notification
-        await db.query(`INSERT INTO notifications (application_id, tip, alici, konu, icerik) VALUES ($1, $2, $3, $4, $5)`, [applicationId, 'email', email, 'Başvuru Alındı', basvuruNo]);
-        await db.query(`INSERT INTO notifications (application_id, tip, alici, konu, icerik) VALUES ($1, $2, $3, $4, $5)`, [applicationId, 'sms', telefon, 'Başvuru Alındı', basvuruNo]);
+            // Log notification
+            await db.query(`INSERT INTO notifications (application_id, tip, alici, konu, icerik) VALUES ($1, $2, $3, $4, $5)`, [applicationId, 'email', email, 'Başvuru Alındı', basvuruNo]).catch(e => console.error('DB email log hatası:', e));
+            await db.query(`INSERT INTO notifications (application_id, tip, alici, konu, icerik) VALUES ($1, $2, $3, $4, $5)`, [applicationId, 'sms', telefon, 'Başvuru Alındı', basvuruNo]).catch(e => console.error('DB sms log hatası:', e));
+        } catch (notifErr) {
+            console.error('Bildirim gönderim hatası (göz ardı edildi):', notifErr);
+        }
 
         res.json({ success: true, basvuru_no: basvuruNo, token, message: 'Başvurunuz alındı.' });
     } catch (err) {
