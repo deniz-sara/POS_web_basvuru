@@ -7,7 +7,7 @@ const SENDER_NAME = 'POS Başvuru Sistemi';
 const BASE_URL = process.env.BASE_URL || process.env.RENDER_EXTERNAL_URL || 'http://localhost:3000';
 
 // Email şablonları
-const QNB_LOGO = "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/QNB_Finansbank_logo.svg/800px-QNB_Finansbank_logo.svg.png";
+const QNB_LOGO = `${BASE_URL}/qnb-logo.png`;
 const QNB_COLOR = "#001b59";
 
 const headerHtml = (title) => `
