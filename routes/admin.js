@@ -285,6 +285,48 @@ router.post('/user', authMiddleware, async (req, res) => {
     }
 });
 
+// PUT /api/admin/user/:id - Yönetici düzenle
+router.put('/user/:id', authMiddleware, async (req, res) => {
+    const { email, password, ad_soyad } = req.body;
+    const { id } = req.params;
+
+    if (!email || !ad_soyad) {
+        return res.status(400).json({ success: false, message: 'Email ve Ad Soyad zorunludur.' });
+    }
+
+    try {
+        if (password) {
+            const hash = bcrypt.hashSync(password, 10);
+            await db.query('UPDATE admin_users SET email = $1, ad_soyad = $2, password_hash = $3 WHERE id = $4', [email, ad_soyad, hash, id]);
+        } else {
+            await db.query('UPDATE admin_users SET email = $1, ad_soyad = $2 WHERE id = $3', [email, ad_soyad, id]);
+        }
+        res.json({ success: true, message: 'Kullanıcı başarıyla güncellendi.' });
+    } catch (err) {
+        if (err.code === '23505' || (err.message && err.message.includes('unique constraint'))) {
+            return res.status(400).json({ success: false, message: 'Bu email zaten kullanımda.' });
+        }
+        res.status(500).json({ success: false, message: 'Sunucu hatası' });
+    }
+});
+
+// PUT /api/admin/user/:id/status - Yönetici durumunu değiştir (aktif/pasif)
+router.put('/user/:id/status', authMiddleware, async (req, res) => {
+    const { id } = req.params;
+    const { aktif } = req.body;
+
+    if (id == req.admin.id) {
+        return res.status(400).json({ success: false, message: 'Kendi hesabınızı pasif yapamazsınız.' });
+    }
+
+    try {
+        await db.query('UPDATE admin_users SET aktif = $1 WHERE id = $2', [aktif ? 1 : 0, id]);
+        res.json({ success: true, message: 'Kullanıcı durumu güncellendi.' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Sunucu hatası' });
+    }
+});
+
 // Dosyalara erişim endpoint'i (admin)
 router.get('/dosya/:filename', authMiddleware, (req, res) => {
     const filePath = path.join(__dirname, '../uploads/pos', req.params.filename);
