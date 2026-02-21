@@ -30,10 +30,11 @@ const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
     params: {
         folder: 'pos_belgeleri',
-        resource_type: 'auto', // PDF, JPG vb. desteği için
+        resource_type: 'raw', // Cloudinary'nin PDF'leri 'image' sanıp güvenlik için engellemesini önlemek adına 'raw' formatında yüklüyoruz
         public_id: (req, file) => {
-            const safe = file.originalname.replace(/[^a-zA-Z0-9.\-]/g, '_');
-            return `${Date.now()}-${uuidv4().slice(0, 8)}-${safe}`;
+            const ext = path.extname(file.originalname);
+            const safe = path.basename(file.originalname, ext).replace(/[^a-zA-Z0-9.\-]/g, '_');
+            return `${Date.now()}-${uuidv4().slice(0, 8)}-${safe}${ext}`;
         }
     }
 });

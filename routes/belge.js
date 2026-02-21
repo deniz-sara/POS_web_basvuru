@@ -33,10 +33,11 @@ const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
     params: {
         folder: 'pos_guncellemeleri',
-        resource_type: 'auto',
+        resource_type: 'raw', // Cloudinary'nin PDF'leri engellememesi için
         public_id: (req, file) => {
-            const safe = file.originalname.replace(/[^a-zA-Z0-9.\-]/g, '_');
-            return `${Date.now()}-guncelleme-${safe}`;
+            const ext = path.extname(file.originalname);
+            const safe = path.basename(file.originalname, ext).replace(/[^a-zA-Z0-9.\-]/g, '_');
+            return `${Date.now()}-guncelleme-${safe}${ext}`;
         }
     }
 });
