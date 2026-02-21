@@ -69,24 +69,31 @@ const BELGE_TIPLERI = {
     banka_hesabi: 'Banka Hesap Cüzdanı'
 };
 
-const ZORUNLU_BELGELER = ['ticari_sicil', 'imza_sirkuleri', 'vergi_levhasi', 'kimlik_fotokopisi', 'ikametgah', 'faaliyet_belgesi'];
+const ZORUNLU_BELGELER = ['ticari_sicil', 'imza_sirkuleri', 'vergi_levhasi', 'kimlik_fotokopisi', 'faaliyet_belgesi', 'kira_tapu'];
 
 // POST /api/pos/basvuru - Yeni başvuru
 router.post('/basvuru', upload.any(), async (req, res) => {
     try {
         const {
-            firma_unvani, tabela_adi, sirket_tipi, vergi_no, vergi_dairesi,
+            firma_unvani, tabela_adi, sirket_tipi, tc_no, vergi_no, vergi_dairesi,
             faaliyet_alani, adres, il, ilce,
             yetkili_ad_soyad, telefon, email, alt_telefon,
-            pos_adedi, pos_tipi, aylik_ciro, ort_islem_tutari
+            pos_adedi, pos_tipi, aylik_ciro
         } = req.body;
 
         // Zorunlu alan validasyonu
-        const zorunlu = { firma_unvani, sirket_tipi, vergi_no, vergi_dairesi, faaliyet_alani, adres, il, ilce, yetkili_ad_soyad, telefon, email, pos_adedi, pos_tipi, aylik_ciro, ort_islem_tutari };
+        const zorunlu = { firma_unvani, sirket_tipi, tc_no, vergi_no, vergi_dairesi, faaliyet_alani, adres, il, ilce, yetkili_ad_soyad, telefon, email, pos_adedi, pos_tipi, aylik_ciro };
         const eksikAlanlar = Object.entries(zorunlu).filter(([k, v]) => !v).map(([k]) => k);
         if (eksikAlanlar.length > 0) {
             return res.status(400).json({ success: false, message: 'Zorunlu alanlar eksik.', eksik: eksikAlanlar });
         }
+
+        // Katı Veri Doğrulama (Strict Validation)
+        if (!/^\d{11}$/.test(tc_no)) return res.status(400).json({ success: false, message: 'TC Kimlik No 11 haneli rakam olmalıdır.' });
+        if (!/^\d{10}$/.test(vergi_no)) return res.status(400).json({ success: false, message: 'Vergi No 10 haneli rakam olmalıdır.' });
+        if (!/^05[0-9]{9}$/.test(telefon)) return res.status(400).json({ success: false, message: 'Telefon 05 ile başlayan 11 haneli rakam olmalıdır.' });
+        const emailRegex = /^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}$/i;
+        if (!emailRegex.test(email)) return res.status(400).json({ success: false, message: 'Geçersiz e-posta adresi.' });
 
         // Yüklenen dosyaları kontrol et
         const yuklenenBelgeler = {};
@@ -108,15 +115,15 @@ router.post('/basvuru', upload.any(), async (req, res) => {
 
         // Başvuruyu kaydet
         const stmt = `
-      INSERT INTO applications (basvuru_no, token, firma_unvani, tabela_adi, sirket_tipi, vergi_no, vergi_dairesi, ticaret_sicil_no,
+      INSERT INTO applications (basvuru_no, token, firma_unvani, tabela_adi, sirket_tipi, tc_no, vergi_no, vergi_dairesi, ticaret_sicil_no,
         faaliyet_alani, adres, il, ilce, yetkili_ad_soyad, telefon, email, alt_telefon,
-        pos_adedi, pos_tipi, aylik_ciro, ort_islem_tutari)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+        pos_adedi, pos_tipi, aylik_ciro)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
       RETURNING id
     `;
-        const result = await db.query(stmt, [basvuruNo, token, firma_unvani, tabela_adi || '', sirket_tipi, vergi_no, vergi_dairesi, '',
+        const result = await db.query(stmt, [basvuruNo, token, firma_unvani, tabela_adi || '', sirket_tipi, tc_no, vergi_no, vergi_dairesi, '',
             faaliyet_alani, adres, il, ilce, yetkili_ad_soyad, telefon, email, alt_telefon || null,
-            parseInt(pos_adedi), pos_tipi, parseFloat(aylik_ciro), parseFloat(ort_islem_tutari)]);
+            parseInt(pos_adedi), pos_tipi, parseFloat(aylik_ciro)]);
 
         const applicationId = result.rows[0].id;
 

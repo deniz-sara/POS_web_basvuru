@@ -584,6 +584,8 @@
                         <div class="grid-2">
                             <div class="info-group"><span class="info-label">Unvan</span><span class="info-val"
                                     id="m_firma"></span></div>
+                            <div class="info-group"><span class="info-label">TC Kimlik No</span><span class="info-val"
+                                    id="m_tcno"></span></div>
                             <div class="info-group"><span class="info-label">Vergi No</span><span class="info-val"
                                     id="m_vno"></span></div>
                             <div class="info-group"><span class="info-label">Vergi Dairesi</span><span class="info-val"
@@ -606,7 +608,7 @@
                                     id="m_tel"></span></div>
                             <div class="info-group"><span class="info-label">Email</span><span class="info-val"
                                     id="m_email"></span></div>
-                            <div class="info-group"><span class="info-label">Hacim / İşlem</span><span class="info-val"
+                            <div class="info-group"><span class="info-label">Tahmini Ciro</span><span class="info-val"
                                     id="m_hacim"></span></div>
                             <div class="info-group"><span class="info-label">POS İsteği</span><span class="info-val"
                                     id="m_pos"></span></div>
@@ -741,7 +743,6 @@
             imza_sirkuleri: 'İmza Sirküleri',
             vergi_levhasi: 'Vergi Levhası',
             kimlik_fotokopisi: 'Kimlik Fotokopisi (Yetkili)',
-            ikametgah: 'İkametgah Belgesi',
             faaliyet_belgesi: 'Faaliyet Belgesi',
             gmu_muafiyet: 'GMU ve Muafiyet Belgesi',
             kira_tapu: 'QNBpay Sözleşme',
@@ -893,7 +894,8 @@
             const b = data.basvuru;
             document.getElementById('m_basvuru_no').innerText = b.basvuru_no;
             document.getElementById('m_firma').innerText = b.firma_unvani;
-            document.getElementById('m_vno').innerText = b.vergi_no;
+            document.getElementById('m_tcno').innerText = b.tc_no || 'Belirtilmedi';
+            document.getElementById('m_vno').innerText = b.vergi_no || 'Belirtilmedi';
             document.getElementById('m_vd').innerText = b.vergi_dairesi;
             document.getElementById('m_faaliyet').innerText = b.faaliyet_alani;
             document.getElementById('m_il').innerText = `${b.il} / ${b.ilce}`;
@@ -902,7 +904,7 @@
             document.getElementById('m_yetkili').innerText = b.yetkili_ad_soyad;
             document.getElementById('m_tel').innerText = b.telefon + (b.alt_telefon ? ' / ' + b.alt_telefon : '');
             document.getElementById('m_email').innerText = b.email;
-            document.getElementById('m_hacim').innerText = `${b.aylik_ciro} TL / Ort. ${b.ort_islem_tutari} TL`;
+            document.getElementById('m_hacim').innerText = `${b.aylik_ciro} TL`;
             document.getElementById('m_pos').innerText = `${b.pos_adedi} Adet ${b.pos_tipi}`;
 
             // Durum update

@@ -187,12 +187,14 @@ router.get('/export', authMiddleware, async (req, res) => {
         const formattedData = basvurular.map(b => ({
             'Başvuru No': b.basvuru_no,
             'Firma Unvanı': b.firma_unvani,
-            'Vergi No': b.vergi_no,
+            'TC No': b.tc_no || '-',
+            'Vergi No': b.vergi_no || '-',
             'Yetkili': b.yetkili_ad_soyad,
             'Telefon': b.telefon,
             'Email': b.email,
             'İl': b.il,
             'POS Adedi': b.pos_adedi,
+            'Tahmini Ciro': b.aylik_ciro,
             'Durum': b.durum,
             'Tarih': b.basvuru_tarihi
         }));

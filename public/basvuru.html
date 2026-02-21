@@ -50,8 +50,8 @@
                 <div class="step-content active" id="step-1">
                     <div class="form-grid">
                         <div class="form-group full-width">
-                            <label>Firma Unvanı <span class="required">*</span></label>
-                            <input type="text" name="firma_unvani" required placeholder="Tam Ticari Unvan">
+                            <label>Firma Tam Adı <span class="required">*</span></label>
+                            <input type="text" name="firma_unvani" required placeholder="Firma Tam Adı">
                         </div>
                         <div class="form-group">
                             <label>Tabela Adı / Slip Başlığı</label>
@@ -66,8 +66,18 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>Vergi No / TC Kimlik No <span class="required">*</span></label>
-                            <input type="text" name="vergi_no" required maxlength="11" placeholder="10 veya 11 Haneli">
+                            <label>Vergi No <span class="required">*</span></label>
+                            <input type="text" name="vergi_no" required maxlength="10" minlength="10" pattern="\d{10}"
+                                title="Vergi No tam 10 haneli rakam olmalıdır."
+                                oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                                placeholder="10 Haneli Vergi No">
+                        </div>
+                        <div class="form-group">
+                            <label>TC Kimlik No <span class="required">*</span></label>
+                            <input type="text" name="tc_no" required maxlength="11" minlength="11" pattern="\d{11}"
+                                title="TC Kimlik No tam 11 haneli rakam olmalıdır."
+                                oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                                placeholder="11 Haneli TC Kimlik No">
                         </div>
                         <div class="form-group">
                             <label>Vergi Dairesi <span class="required">*</span></label>
@@ -77,11 +87,22 @@
                             <label>Faaliyet Alanı <span class="required">*</span></label>
                             <select name="faaliyet_alani" required>
                                 <option value="">Seçiniz...</option>
-                                <option value="Perakende">Perakende</option>
-                                <option value="Hizmet">Hizmet</option>
-                                <option value="Yeme-İçme">Yeme-İçme</option>
-                                <option value="E-Ticaret">E-Ticaret</option>
-                                <option value="Diğer">Diğer</option>
+                                <option value="Market ve Bakkallar">Market ve Bakkallar</option>
+                                <option value="Giyim ve Tekstil">Giyim ve Tekstil</option>
+                                <option value="Yeme-İçme (Restoran/Kafe)">Yeme-İçme (Restoran/Kafe)</option>
+                                <option value="E-Ticaret ve Online Satış">E-Ticaret ve Online Satış</option>
+                                <option value="Kozmetik ve Güzellik">Kozmetik ve Güzellik</option>
+                                <option value="Mobilya ve Dekorasyon">Mobilya ve Dekorasyon</option>
+                                <option value="Otomotiv ve Yedek Parça">Otomotiv ve Yedek Parça</option>
+                                <option value="Turizm ve Seyahat">Turizm ve Seyahat</option>
+                                <option value="Eğitim ve Danışmanlık">Eğitim ve Danışmanlık</option>
+                                <option value="Sağlık Hizmetleri / Medikal">Sağlık Hizmetleri / Medikal</option>
+                                <option value="Eczaneler">Eczaneler</option>
+                                <option value="Kırtasiye ve Kitapevi">Kırtasiye ve Kitapevi</option>
+                                <option value="Toptan Ticaret">Toptan Ticaret</option>
+                                <option value="İnşaat ve Yapı Malzemeleri">İnşaat ve Yapı Malzemeleri</option>
+                                <option value="Etkinlik ve Organizasyon">Etkinlik ve Organizasyon</option>
+                                <option value="Diğer (Hizmet/Üretim)">Diğer (Hizmet/Üretim)</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -112,12 +133,15 @@
                         </div>
                         <div class="form-group">
                             <label>Cep Telefonu <span class="required">*</span></label>
-                            <input type="tel" name="telefon" required placeholder="05XXXXXXXXX" pattern="^0?5[0-9]{9}$"
-                                title="Lütfen geçerli bir telefon numarası giriniz">
+                            <input type="tel" name="telefon" required placeholder="05XXXXXXXXX" maxlength="11"
+                                minlength="11" pattern="^05[0-9]{9}$"
+                                title="05 ile başlayan 11 haneli geçerli bir telefon numarası giriniz (Örn: 05321234567)"
+                                oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                         </div>
                         <div class="form-group">
                             <label>E-posta Adresi <span class="required">*</span></label>
-                            <input type="email" name="email" required placeholder="ornek@firma.com">
+                            <input type="email" name="email" required pattern="[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}$"
+                                title="Geçerli bir e-posta adresi giriniz" placeholder="ornek@firma.com">
                         </div>
                         <div class="form-group full-width">
                             <label>Alternatif Telefon</label>
@@ -144,11 +168,8 @@
                         </div>
                         <div class="form-group">
                             <label>Tahmini Aylık Ciro (TL) <span class="required">*</span></label>
-                            <input type="number" name="aylik_ciro" required min="1000" placeholder="100000">
-                        </div>
-                        <div class="form-group">
-                            <label>Ortalama İşlem Tutarı (TL) <span class="required">*</span></label>
-                            <input type="number" name="ort_islem_tutari" required min="10" placeholder="500">
+                            <input type="text" name="aylik_ciro" required placeholder="10,000"
+                                oninput="formatCurrency(this)">
                         </div>
                     </div>
                 </div>
@@ -185,7 +206,10 @@
                         <path class="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8" />
                     </svg>
                     <h2>Başvurunuz Alındı!</h2>
-                    <p>Referans Numaranız: <strong id="successBasvuruNo">---</strong></p>
+                    <p>Referans Numaranız: <strong id="successBasvuruNo">---</strong>
+                        <button type="button" onclick="copyBasvuruNo()"
+                            style="margin-left: 10px; cursor: pointer; border: none; background: var(--primary); color: white; border-radius: 4px; padding: 4px 8px; font-size: 12px;">Kopyala</button>
+                    </p>
                     <p style="font-size: 14px; color: var(--text-light);">Başvurunuz alınmış olup değerlendirme sürecine
                         geçilmiştir. Durumu takip etmeniz için detaylar e-posta ve SMS olarak gönderilmiştir.</p>
                     <div style="margin-top: 30px;">
@@ -212,10 +236,9 @@
             { id: 'imza_sirkuleri', mask: 'İmza Sirküleri', required: true, desc: 'Noter onaylı' },
             { id: 'vergi_levhasi', mask: 'Vergi Levhası', required: true, desc: 'Son yıla ait' },
             { id: 'kimlik_fotokopisi', mask: 'Kimlik Fotokopisi', required: true, desc: 'Yetkilinin ön yüzü' },
-            { id: 'ikametgah', mask: 'İkametgah Belgesi', required: true, desc: 'E-Devlet üzerinden' },
             { id: 'faaliyet_belgesi', mask: 'Faaliyet Belgesi', required: true, desc: 'Oda kayıt belgesi' },
             { id: 'gmu_muafiyet', mask: 'GMU ve Muafiyet Belgesi', required: false, desc: 'İsteğe bağlı' },
-            { id: 'kira_tapu', mask: 'QNBpay Sözleşme', required: false, desc: 'İsteğe bağlı' },
+            { id: 'kira_tapu', mask: 'QNBpay Sözleşme', required: true, desc: 'Zorunlu İmzalı Sözleşme' },
             { id: 'banka_hesabi', mask: 'Banka Hesap Cüzdanı', required: false, desc: 'İsteğe bağlı' }
         ];
 
@@ -388,6 +411,11 @@
             const form = document.getElementById('posForm');
             const data = new FormData(form);
 
+            // Clean up aylik_ciro (remove formatting commas before sending)
+            if (data.has('aylik_ciro')) {
+                data.set('aylik_ciro', data.get('aylik_ciro').replace(/,/g, ''));
+            }
+
             // Clean up files we track manually just in case
             belgeler.forEach(b => {
                 data.delete(b.id);
@@ -403,7 +431,6 @@
                 const result = await response.json();
                 if (result.success) {
                     document.getElementById('successBasvuruNo').innerText = result.basvuru_no;
-                    // document.getElementById('trackLink').href = '/pos/durum.html?token=' + result.token; // Changed to static link below
                     currentTab = 4;
                     showTab(currentTab);
                 } else {
@@ -416,6 +443,26 @@
                 btn.innerText = "Başvuruyu Gönder";
                 btn.disabled = false;
             }
+        }
+
+        function formatCurrency(input) {
+            let value = input.value.replace(/\D/g, ''); // Remove non-digits
+            if (value) {
+                // Add commas for thousands
+                input.value = parseInt(value, 10).toLocaleString('en-US');
+            } else {
+                input.value = '';
+            }
+        }
+
+        function copyBasvuruNo() {
+            const textToCopy = document.getElementById('successBasvuruNo').innerText;
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                alert("Başvuru numarası kopyalandı: " + textToCopy);
+            }).catch(err => {
+                console.error('Kopyalama hatası', err);
+                alert("Kopyalanamadı, lütfen manuel seçin.");
+            });
         }
 
         init();

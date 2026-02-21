@@ -20,7 +20,8 @@ const initializeDatabase = async () => {
         firma_unvani TEXT NOT NULL,
         tabela_adi TEXT DEFAULT '',
         sirket_tipi TEXT DEFAULT 'Sahis',
-        vergi_no TEXT NOT NULL,
+        tc_no TEXT,
+        vergi_no TEXT,
         vergi_dairesi TEXT NOT NULL,
         ticaret_sicil_no TEXT NOT NULL,
         faaliyet_alani TEXT NOT NULL,
@@ -36,9 +37,8 @@ const initializeDatabase = async () => {
         pos_adedi INTEGER NOT NULL,
         pos_tipi TEXT NOT NULL,
         aylik_ciro REAL NOT NULL,
-        ort_islem_tutari REAL NOT NULL,
         
-        durum TEXT NOT NULL DEFAULT 'alingi',
+        durum TEXT NOT NULL DEFAULT 'alindi',
         durum_aciklama TEXT,
         
         basvuru_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -90,6 +90,18 @@ const initializeDatabase = async () => {
         FOREIGN KEY (application_id) REFERENCES applications(id)
       );
     `);
+
+    // Auto-migration for existing databases
+    try {
+      await pool.query('ALTER TABLE applications ADD COLUMN tc_no TEXT');
+      console.log("Migration: tc_no kotonu eklendi.");
+    } catch (e) { } // Ignores error if column already exists
+
+    // Auto-migration for existing databases
+    try {
+      await pool.query('ALTER TABLE applications ADD COLUMN vergi_no TEXT');
+      console.log("Migration: vergi_no kolonu eklendi.");
+    } catch (e) { } // Ignores error if column already exists
 
     // Default admin eklentisi
     const bcrypt = require('bcryptjs');
