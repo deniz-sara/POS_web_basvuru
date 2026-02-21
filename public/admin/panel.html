@@ -874,10 +874,10 @@
             Object.entries(BELGE_TIPLERI).forEach(([key, val]) => {
                 const isEksikState = mevcut[key] && mevcut[key].durum === 'eksik';
                 eksikBox.innerHTML += `
-                        < label style = "display:flex;align-items:center;gap:8px;margin-bottom:5px;font-size:13px;" >
+                        <label style="display:flex;align-items:center;gap:8px;margin-bottom:5px;font-size:13px;">
                             <input type="checkbox" name="eksik_cb" value="${key}" ${isEksikState ? 'checked' : ''} ${isEksikState ? 'disabled title="Zaten istendi"' : ''}>
-                                ${val} ${!mevcut[key] ? '<span style="color:red;font-size:10px">(Hiç Yüklenmemiş)</span>' : ''}
-                            </label>
+                            ${val} ${!mevcut[key] ? '<span style="color:red;font-size:10px">(Hiç Yüklenmemiş)</span>' : ''}
+                        </label>
                     `;
             });
 
