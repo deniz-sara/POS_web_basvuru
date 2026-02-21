@@ -401,7 +401,11 @@
 <body>
 
     <div class="sidebar">
-        <div class="sidebar-header">POS Yönetimi</div>
+        <div class="sidebar-header" style="display:flex; flex-direction:column; align-items:center; gap:10px;">
+            <img src="https://www.qnb.com.tr/App_Themes/Default/images/qnb-logo.svg" alt="QNB Logo"
+                style="height: 30px; margin-bottom: 5px;">
+            <span style="font-size: 16px;">POS Yönetimi</span>
+        </div>
         <div class="nav-menu">
             <a class="nav-item active" id="nav-basvuru" onclick="showView('basvuru')">Tüm Başvurular</a>
             <a class="nav-item" id="nav-kullanici" onclick="showView('kullanici')">Yöneticiler</a>
