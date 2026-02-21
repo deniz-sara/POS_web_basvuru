@@ -906,7 +906,7 @@
                     const tr = document.createElement('tr');
                     tr.onclick = () => openModal(b.id);
                     tr.innerHTML = `
-                < td > ${new Date(b.basvuru_tarihi).toLocaleDateString('tr-TR')}</td >
+                        <td>${new Date(b.basvuru_tarihi).toLocaleDateString('tr-TR')}</td>
                         <td style="font-weight:600;color:var(--primary)">${b.basvuru_no}</td>
                         <td>${b.firma_unvani}</td>
                         <td>${b.il || '-'}</td>
@@ -914,7 +914,7 @@
                         <td><span class="badge ${b.durum}">${DURUM_LABELS[b.durum] || b.durum}</span>
                             ${b.eksik_belge > 0 ? `<br><span style="font-size:11px;color:red">${b.eksik_belge} belge eksik</span>` : ''}
                         </td>
-            `;
+                    `;
                     tbody.appendChild(tr);
                 });
             }
@@ -928,7 +928,7 @@
 
         async function openModal(id) {
             currentActiveId = id;
-            const data = await apiCall(`/ basvuru / ${id} `);
+            const data = await apiCall(`/basvuru/${id}`);
             if (!data || !data.success) return alert('Veri alınamadı');
 
             const b = data.basvuru;
