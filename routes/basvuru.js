@@ -40,7 +40,7 @@ const storage = new CloudinaryStorage({
 
 const upload = multer({
     storage,
-    limits: { fileSize: 15 * 1024 * 1024 }, // 15MB
+    limits: { fileSize: 10 * 1024 * 1024 }, // Reduced to 10MB to avoid OOM on free tier
     fileFilter: (req, file, cb) => {
         const allowed = ['.pdf', '.jpg', '.jpeg', '.png'];
         const ext = path.extname(file.originalname).toLowerCase();
@@ -72,105 +72,115 @@ const BELGE_TIPLERI = {
 const ZORUNLU_BELGELER = ['ticari_sicil', 'imza_sirkuleri', 'vergi_levhasi', 'kimlik_fotokopisi', 'faaliyet_belgesi', 'kira_tapu', 'banka_hesabi'];
 
 // POST /api/pos/basvuru - Yeni başvuru
-router.post('/basvuru', upload.any(), async (req, res) => {
-    try {
-        const {
-            firma_unvani, tabela_adi, sirket_tipi, tc_no, vergi_no, vergi_dairesi,
-            faaliyet_alani, adres, il, ilce,
-            yetkili_ad_soyad, telefon, email, alt_telefon,
-            pos_adedi, pos_tipi, aylik_ciro, cihaz_detaylari
-        } = req.body;
-
-        // Zorunlu alan validasyonu
-        const zorunlu = { firma_unvani, sirket_tipi, tc_no, vergi_no, vergi_dairesi, faaliyet_alani, adres, il, ilce, yetkili_ad_soyad, telefon, email, pos_adedi, pos_tipi, aylik_ciro };
-        const eksikAlanlar = Object.entries(zorunlu).filter(([k, v]) => !v).map(([k]) => k);
-        if (eksikAlanlar.length > 0) {
-            return res.status(400).json({ success: false, message: 'Zorunlu alanlar eksik.', eksik: eksikAlanlar });
+router.post('/basvuru', (req, res) => {
+    upload.any()(req, res, async (uploadErr) => {
+        if (uploadErr) {
+            console.error("Multer upload hatası:", uploadErr);
+            if (uploadErr.code === 'LIMIT_FILE_SIZE') {
+                return res.status(400).json({ success: false, message: 'Yüklenen dosyalardan biri çok büyük (Maksimum 10MB).' });
+            }
+            return res.status(400).json({ success: false, message: 'Dosya yükleme hatası: ' + uploadErr.message });
         }
 
-        // Katı Veri Doğrulama (Strict Validation)
-        if (!/^\d{11}$/.test(tc_no)) return res.status(400).json({ success: false, message: 'TC Kimlik No 11 haneli rakam olmalıdır.' });
-        if (!/^\d{10}$/.test(vergi_no)) return res.status(400).json({ success: false, message: 'Vergi No 10 haneli rakam olmalıdır.' });
-        if (!/^05[0-9]{9}$/.test(telefon)) return res.status(400).json({ success: false, message: 'Telefon 05 ile başlayan 11 haneli rakam olmalıdır.' });
-        const emailRegex = /^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}$/i;
-        if (!emailRegex.test(email)) return res.status(400).json({ success: false, message: 'Geçersiz e-posta adresi.' });
+        try {
+            const {
+                firma_unvani, tabela_adi, sirket_tipi, tc_no, vergi_no, vergi_dairesi,
+                faaliyet_alani, adres, il, ilce,
+                yetkili_ad_soyad, telefon, email, alt_telefon,
+                pos_adedi, pos_tipi, aylik_ciro, cihaz_detaylari
+            } = req.body;
 
-        // Dinamik Cihaz Detayları JSON Validasyonu
-        if (cihaz_detaylari) {
-            try {
-                const parsedCihaz = JSON.parse(cihaz_detaylari);
-                if (parsedCihaz.mulkiyet === 'Kendi Cihazim') {
-                    for (const c of parsedCihaz.cihazlar) {
-                        if (!c.seri_no || c.seri_no.trim() === '') {
-                            return res.status(400).json({ success: false, message: 'Kendi cihazını kullanan firmalar her cihaz için Seri No belirtmek zorundadır.' });
+            // Zorunlu alan validasyonu
+            const zorunlu = { firma_unvani, sirket_tipi, tc_no, vergi_no, vergi_dairesi, faaliyet_alani, adres, il, ilce, yetkili_ad_soyad, telefon, email, pos_adedi, pos_tipi, aylik_ciro };
+            const eksikAlanlar = Object.entries(zorunlu).filter(([k, v]) => !v).map(([k]) => k);
+            if (eksikAlanlar.length > 0) {
+                return res.status(400).json({ success: false, message: 'Zorunlu alanlar eksik.', eksik: eksikAlanlar });
+            }
+
+            // Katı Veri Doğrulama (Strict Validation)
+            if (!/^\d{11}$/.test(tc_no)) return res.status(400).json({ success: false, message: 'TC Kimlik No 11 haneli rakam olmalıdır.' });
+            if (!/^\d{10}$/.test(vergi_no)) return res.status(400).json({ success: false, message: 'Vergi No 10 haneli rakam olmalıdır.' });
+            if (!/^05[0-9]{9}$/.test(telefon)) return res.status(400).json({ success: false, message: 'Telefon 05 ile başlayan 11 haneli rakam olmalıdır.' });
+            const emailRegex = /^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}$/i;
+            if (!emailRegex.test(email)) return res.status(400).json({ success: false, message: 'Geçersiz e-posta adresi.' });
+
+            // Dinamik Cihaz Detayları JSON Validasyonu
+            if (cihaz_detaylari) {
+                try {
+                    const parsedCihaz = JSON.parse(cihaz_detaylari);
+                    if (parsedCihaz.mulkiyet === 'Kendi Cihazim') {
+                        for (const c of parsedCihaz.cihazlar) {
+                            if (!c.seri_no || c.seri_no.trim() === '') {
+                                return res.status(400).json({ success: false, message: 'Kendi cihazını kullanan firmalar her cihaz için Seri No belirtmek zorundadır.' });
+                            }
                         }
                     }
+                } catch (e) {
+                    return res.status(400).json({ success: false, message: 'Geçersiz cihaz veri formatı.' });
                 }
-            } catch (e) {
-                return res.status(400).json({ success: false, message: 'Geçersiz cihaz veri formatı.' });
             }
-        }
 
-        // Yüklenen dosyaları kontrol et
-        const yuklenenBelgeler = {};
-        if (req.files) {
-            req.files.forEach(f => { yuklenenBelgeler[f.fieldname] = f; });
-        }
+            // Yüklenen dosyaları kontrol et
+            const yuklenenBelgeler = {};
+            if (req.files) {
+                req.files.forEach(f => { yuklenenBelgeler[f.fieldname] = f; });
+            }
 
-        const eksikZorunlu = ZORUNLU_BELGELER.filter(b => !yuklenenBelgeler[b]);
-        if (eksikZorunlu.length > 0) {
-            return res.status(400).json({
-                success: false,
-                message: 'Zorunlu belgeler eksik.',
-                eksik_belgeler: eksikZorunlu.map(b => BELGE_TIPLERI[b])
-            });
-        }
+            const eksikZorunlu = ZORUNLU_BELGELER.filter(b => !yuklenenBelgeler[b]);
+            if (eksikZorunlu.length > 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Zorunlu belgeler eksik.',
+                    eksik_belgeler: eksikZorunlu.map(b => BELGE_TIPLERI[b])
+                });
+            }
 
-        const basvuruNo = generateBasvuruNo();
-        const token = uuidv4();
+            const basvuruNo = generateBasvuruNo();
+            const token = uuidv4();
 
-        // Başvuruyu kaydet
-        const stmt = `
+            // Başvuruyu kaydet
+            const stmt = `
       INSERT INTO applications (basvuru_no, token, firma_unvani, tabela_adi, sirket_tipi, tc_no, vergi_no, vergi_dairesi, ticaret_sicil_no,
         faaliyet_alani, adres, il, ilce, yetkili_ad_soyad, telefon, email, alt_telefon,
         pos_adedi, pos_tipi, aylik_ciro, cihaz_detaylari, ort_islem_tutari)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
       RETURNING id
     `;
-        const result = await db.query(stmt, [basvuruNo, token, firma_unvani, tabela_adi || '', sirket_tipi, tc_no, vergi_no, vergi_dairesi, '',
-            faaliyet_alani, adres, il, ilce, yetkili_ad_soyad, telefon, email, alt_telefon || null,
-            parseInt(pos_adedi), pos_tipi, parseFloat(aylik_ciro), cihaz_detaylari || null, 0]);
+            const result = await db.query(stmt, [basvuruNo, token, firma_unvani, tabela_adi || '', sirket_tipi, tc_no, vergi_no, vergi_dairesi, '',
+                faaliyet_alani, adres, il, ilce, yetkili_ad_soyad, telefon, email, alt_telefon || null,
+                parseInt(pos_adedi), pos_tipi, parseFloat(aylik_ciro), cihaz_detaylari || null, 0]);
 
-        const applicationId = result.rows[0].id;
+            const applicationId = result.rows[0].id;
 
-        // Belgeleri kaydet
-        const docStmt = `
+            // Belgeleri kaydet
+            const docStmt = `
       INSERT INTO documents (application_id, belge_tipi, belge_adi, dosya_yolu, orijinal_ad, boyut, zorunlu)
       VALUES ($1, $2, $3, $4, $5, $6, $7)
     `;
-        for (const [tip, file] of Object.entries(yuklenenBelgeler)) {
-            await db.query(docStmt, [applicationId, tip, BELGE_TIPLERI[tip] || tip, file.path, file.originalname, file.size, ZORUNLU_BELGELER.includes(tip) ? 1 : 0]);
+            for (const [tip, file] of Object.entries(yuklenenBelgeler)) {
+                await db.query(docStmt, [applicationId, tip, BELGE_TIPLERI[tip] || tip, file.path, file.originalname, file.size, ZORUNLU_BELGELER.includes(tip) ? 1 : 0]);
+            }
+
+            // Email & SMS gönder (async, hatalar ana akışı bozmasın diye try-catch içinde)
+            try {
+                const emailData = { basvuru_no: basvuruNo, token, firma_unvani, yetkili_ad_soyad, telefon, email, pos_adedi, pos_tipi, il, ilce };
+                sendEmail(email, 'basvuruAlindiMusteri', emailData).catch(e => console.error('Müşteri email hatası:', e));
+                sendEmail(ADMIN_EMAIL, 'basvuruAlindiAdmin', emailData).catch(e => console.error('Admin email hatası:', e));
+                sendSMS(telefon, smsTemplates.basvuruAlindi(basvuruNo, token)).catch(e => console.error('SMS hatası:', e));
+
+                // Log notification
+                await db.query(`INSERT INTO notifications (application_id, tip, alici, konu, icerik) VALUES ($1, $2, $3, $4, $5)`, [applicationId, 'email', email, 'Başvuru Alındı', basvuruNo]).catch(e => console.error('DB email log hatası:', e));
+                await db.query(`INSERT INTO notifications (application_id, tip, alici, konu, icerik) VALUES ($1, $2, $3, $4, $5)`, [applicationId, 'sms', telefon, 'Başvuru Alındı', basvuruNo]).catch(e => console.error('DB sms log hatası:', e));
+            } catch (notifErr) {
+                console.error('Bildirim gönderim hatası (göz ardı edildi):', notifErr);
+            }
+
+            res.json({ success: true, basvuru_no: basvuruNo, token, message: 'Başvurunuz alındı.' });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ success: false, message: 'Sunucu hatası: ' + err.message });
         }
-
-        // Email & SMS gönder (async, hatalar ana akışı bozmasın diye try-catch içinde)
-        try {
-            const emailData = { basvuru_no: basvuruNo, token, firma_unvani, yetkili_ad_soyad, telefon, email, pos_adedi, pos_tipi, il, ilce };
-            sendEmail(email, 'basvuruAlindiMusteri', emailData).catch(e => console.error('Müşteri email hatası:', e));
-            sendEmail(ADMIN_EMAIL, 'basvuruAlindiAdmin', emailData).catch(e => console.error('Admin email hatası:', e));
-            sendSMS(telefon, smsTemplates.basvuruAlindi(basvuruNo, token)).catch(e => console.error('SMS hatası:', e));
-
-            // Log notification
-            await db.query(`INSERT INTO notifications (application_id, tip, alici, konu, icerik) VALUES ($1, $2, $3, $4, $5)`, [applicationId, 'email', email, 'Başvuru Alındı', basvuruNo]).catch(e => console.error('DB email log hatası:', e));
-            await db.query(`INSERT INTO notifications (application_id, tip, alici, konu, icerik) VALUES ($1, $2, $3, $4, $5)`, [applicationId, 'sms', telefon, 'Başvuru Alındı', basvuruNo]).catch(e => console.error('DB sms log hatası:', e));
-        } catch (notifErr) {
-            console.error('Bildirim gönderim hatası (göz ardı edildi):', notifErr);
-        }
-
-        res.json({ success: true, basvuru_no: basvuruNo, token, message: 'Başvurunuz alındı.' });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, message: 'Sunucu hatası: ' + err.message });
-    }
+    }); // End of upload wrapper
 });
 
 // GET /api/pos/durum/:token - Başvuru durum sorgulama
