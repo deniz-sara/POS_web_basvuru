@@ -1,7 +1,7 @@
 const axios = require('axios');
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'basvuru-ekibi@sirketiniz.com';
-const BREVO_API_KEY = process.env.BREVO_API_KEY; // Brevo'dan alınan API Key
+const BREVO_API_KEY = process.env.BREVO_API_KEY ? process.env.BREVO_API_KEY.replace(/['"]/g, '').trim() : '';
 const SENDER_EMAIL = process.env.SMTP_USER || 'noreply@pos.com'; // Brevo'da onaylı Gmail adresiniz
 const SENDER_NAME = 'POS Başvuru Sistemi';
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
@@ -142,7 +142,8 @@ async function sendEmail(to, templateName, data) {
 
   try {
     const template = templates[templateName](data);
-    console.log(`[EMAIL] Şablon hazırlandı. Brevo API isteği atılıyor...`);
+    const maskedKey = BREVO_API_KEY.substring(0, 14) + '...';
+    console.log(`[EMAIL] Şablon hazırlandı. Brevo API isteği atılıyor... (Anahtar: ${maskedKey})`);
 
     const payload = {
       sender: { name: SENDER_NAME, email: SENDER_EMAIL },
