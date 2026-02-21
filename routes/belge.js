@@ -30,15 +30,7 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, os.tmpdir());
-    },
-    filename: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-    }
-});
+const storage = multer.memoryStorage();
 
 const upload = multer({
     storage,
@@ -108,16 +100,19 @@ router.post('/belge-yukle', upload.any(), async (req, res) => {
 
             let secureUrl = '';
             try {
-                const result = await cloudinary.uploader.upload(file.path, {
-                    folder: 'pos_guncellemeleri',
-                    resource_type: 'raw',
-                    public_id: pubId
+                const result = await new Promise((resolve, reject) => {
+                    cloudinary.uploader.upload_stream({
+                        folder: 'pos_guncellemeleri',
+                        resource_type: 'raw',
+                        public_id: pubId
+                    }, (error, res) => {
+                        if (error) reject(error);
+                        else resolve(res);
+                    }).end(file.buffer);
                 });
                 secureUrl = result.secure_url;
-                if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
             } catch (upErr) {
                 console.error("Cloudinary upload hatası (belge):", upErr);
-                req.files.forEach(f => { if (fs.existsSync(f.path)) fs.unlinkSync(f.path); });
                 return res.status(500).json({ success: false, message: 'Hata detayı: ' + (upErr.message || JSON.stringify(upErr)) });
             }
 
