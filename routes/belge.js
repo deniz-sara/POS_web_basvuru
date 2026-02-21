@@ -20,7 +20,8 @@ const BELGE_TIPLERI = {
 };
 
 const cloudinary = require('cloudinary').v2;
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const os = require('os');
+const { v4: uuidv4 } = require('uuid');
 require('dotenv').config();
 
 cloudinary.config({
@@ -29,16 +30,13 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-const storage = new CloudinaryStorage({
-    cloudinary: cloudinary,
-    params: {
-        folder: 'pos_guncellemeleri',
-        resource_type: 'raw', // Cloudinary'nin PDF'leri engellememesi için
-        public_id: (req, file) => {
-            const ext = path.extname(file.originalname);
-            const safe = path.basename(file.originalname, ext).replace(/[^a-zA-Z0-9.\-]/g, '_');
-            return `${Date.now()}-guncelleme-${safe}${ext}`;
-        }
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, os.tmpdir());
+    },
+    filename: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
     }
 });
 
@@ -104,15 +102,34 @@ router.post('/belge-yukle', upload.any(), async (req, res) => {
 
         for (const file of req.files) {
             const belge_tipi = file.fieldname;
+            const ext = path.extname(file.originalname);
+            const safe = path.basename(file.originalname, ext).replace(/[^a-zA-Z0-9.\-]/g, '_');
+            const pubId = `${Date.now()}-guncelleme-${safe}${ext}`;
+
+            let secureUrl = '';
+            try {
+                const result = await cloudinary.uploader.upload(file.path, {
+                    folder: 'pos_guncellemeleri',
+                    resource_type: 'raw',
+                    public_id: pubId
+                });
+                secureUrl = result.secure_url;
+                if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+            } catch (upErr) {
+                console.error("Cloudinary upload hatası (belge):", upErr);
+                req.files.forEach(f => { if (fs.existsSync(f.path)) fs.unlinkSync(f.path); });
+                return res.status(500).json({ success: false, message: 'Dosya buluta yüklenirken hata oluştu.' });
+            }
+
             const existingRes = await db.query('SELECT id FROM documents WHERE application_id = $1 AND belge_tipi = $2', [app.id, belge_tipi]);
             const existing = existingRes.rows[0];
 
             if (existing) {
                 await db.query('UPDATE documents SET dosya_yolu = $1, orijinal_ad = $2, boyut = $3, durum = $4, yukleme_tarihi = CURRENT_TIMESTAMP WHERE id = $5',
-                    [file.path, file.originalname, file.size, 'yuklendi', existing.id]);
+                    [secureUrl, file.originalname, file.size, 'yuklendi', existing.id]);
             } else {
                 await db.query('INSERT INTO documents (application_id, belge_tipi, belge_adi, dosya_yolu, orijinal_ad, boyut, durum) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-                    [app.id, belge_tipi, BELGE_TIPLERI[belge_tipi] || belge_tipi, file.path, file.originalname, file.size, 'yuklendi']);
+                    [app.id, belge_tipi, BELGE_TIPLERI[belge_tipi] || belge_tipi, secureUrl, file.originalname, file.size, 'yuklendi']);
             }
 
             yuklenenAdlar.push(BELGE_TIPLERI[belge_tipi] || belge_tipi);

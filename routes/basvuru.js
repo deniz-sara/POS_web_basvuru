@@ -10,7 +10,7 @@ const { sendSMS, smsTemplates } = require('../services/smsService');
 const { generateUploadToken } = require('../middleware/auth');
 
 const cloudinary = require('cloudinary').v2;
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const os = require('os');
 require('dotenv').config();
 
 cloudinary.config({
@@ -19,23 +19,14 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-console.log('--- CLOUDINARY ENV VARIABLES CHECK ---');
-console.log('CLOUD_NAME Loaded:', !!process.env.CLOUDINARY_CLOUD_NAME);
-console.log('API_KEY Loaded:', !!process.env.CLOUDINARY_API_KEY);
-console.log('API_SECRET Loaded:', !!process.env.CLOUDINARY_API_SECRET);
-console.log('--------------------------------------');
-
-// Multer - belge yükleme (Cloudinary'ye yükleme)
-const storage = new CloudinaryStorage({
-    cloudinary: cloudinary,
-    params: {
-        folder: 'pos_belgeleri',
-        resource_type: 'raw', // Cloudinary'nin PDF'leri 'image' sanıp güvenlik için engellemesini önlemek adına 'raw' formatında yüklüyoruz
-        public_id: (req, file) => {
-            const ext = path.extname(file.originalname);
-            const safe = path.basename(file.originalname, ext).replace(/[^a-zA-Z0-9.\-]/g, '_');
-            return `${Date.now()}-${uuidv4().slice(0, 8)}-${safe}${ext}`;
-        }
+// Multer - belge yükleme (Önce diske, sonra manuel olarak Cloudinary'ye)
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, os.tmpdir());
+    },
+    filename: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
     }
 });
 
@@ -122,18 +113,50 @@ router.post('/basvuru', (req, res) => {
             }
 
             // Yüklenen dosyaları kontrol et
-            const yuklenenBelgeler = {};
+            const yuklenenBelgelerLocals = {};
             if (req.files) {
-                req.files.forEach(f => { yuklenenBelgeler[f.fieldname] = f; });
+                req.files.forEach(f => { yuklenenBelgelerLocals[f.fieldname] = f; });
             }
 
-            const eksikZorunlu = ZORUNLU_BELGELER.filter(b => !yuklenenBelgeler[b]);
+            const eksikZorunlu = ZORUNLU_BELGELER.filter(b => !yuklenenBelgelerLocals[b]);
             if (eksikZorunlu.length > 0) {
+                // Hata durumunda geçici dosyaları sil
+                if (req.files) req.files.forEach(f => { if (fs.existsSync(f.path)) fs.unlinkSync(f.path); });
                 return res.status(400).json({
                     success: false,
                     message: 'Zorunlu belgeler eksik.',
                     eksik_belgeler: eksikZorunlu.map(b => BELGE_TIPLERI[b])
                 });
+            }
+
+            // Cloudinary'ye manuel yükle (Kesin olarak resource_type: 'raw' olmak zorunda)
+            const yuklenenBelgeler = {};
+            if (req.files) {
+                for (const f of req.files) {
+                    const ext = path.extname(f.originalname);
+                    const safe = path.basename(f.originalname, ext).replace(/[^a-zA-Z0-9.\-]/g, '_');
+                    const pubId = `${Date.now()}-${uuidv4().slice(0, 8)}-${safe}${ext}`;
+
+                    try {
+                        const result = await cloudinary.uploader.upload(f.path, {
+                            folder: 'pos_belgeleri',
+                            resource_type: 'raw',
+                            public_id: pubId
+                        });
+
+                        yuklenenBelgeler[f.fieldname] = {
+                            path: result.secure_url,
+                            originalname: f.originalname,
+                            size: f.size
+                        };
+
+                        if (fs.existsSync(f.path)) fs.unlinkSync(f.path);
+                    } catch (upErr) {
+                        console.error("Cloudinary upload hatası:", upErr);
+                        req.files.forEach(file => { if (fs.existsSync(file.path)) fs.unlinkSync(file.path); });
+                        return res.status(500).json({ success: false, message: 'Dosya buluta yüklenirken hata oluştu.' });
+                    }
+                }
             }
 
             const basvuruNo = generateBasvuruNo();
