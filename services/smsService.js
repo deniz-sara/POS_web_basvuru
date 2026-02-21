@@ -47,7 +47,7 @@ async function sendSMS(telefon, mesaj) {
 
 const smsTemplates = {
     basvuruAlindi: (basvuruNo, token) =>
-        `POS basvurunuz alindi. Basvuru No: ${basvuruNo}. Takip icin: ${BASE_URL}/pos/durum?token=${token}`,
+        `POS basvurunuz alindi. Basvuru No: ${basvuruNo}. Takip icin: ${BASE_URL}/pos/durum.html?token=${token}`,
 
     eksikEvrak: (basvuruNo, token) =>
         `POS basvurunuzda (${basvuruNo}) eksik evrak tespit edildi. Yuklemek icin: ${BASE_URL}/pos/belge-guncelle?token=${token}`,

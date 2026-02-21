@@ -34,7 +34,7 @@ const templates = {
             <p style="margin:5px 0;color:#333"><strong>📱 POS Adedi:</strong> ${data.pos_adedi} adet (${data.pos_tipi})</p>
           </div>
           <div style="text-align:center;margin:30px 0">
-            <a href="${BASE_URL}/pos/durum?token=${data.token}" style="background:${QNB_COLOR};color:#fff;padding:14px 30px;border-radius:25px;text-decoration:none;font-weight:bold;font-size:15px;display:inline-block">
+            <a href="${BASE_URL}/pos/durum.html?token=${data.token}" style="background:${QNB_COLOR};color:#fff;padding:14px 30px;border-radius:25px;text-decoration:none;font-weight:bold;font-size:15px;display:inline-block">
               Başvuru Durumunu Takip Et
             </a>
           </div>
@@ -104,7 +104,7 @@ const templates = {
           </div>
           ${data.aciklama ? `<p style="color:#555">Açıklama: ${data.aciklama}</p>` : ''}
           <div style="text-align:center;margin:30px 0">
-            <a href="${BASE_URL}/pos/durum?token=${data.token}" style="background:${QNB_COLOR};color:#fff;padding:14px 30px;border-radius:25px;text-decoration:none;font-weight:bold;display:inline-block">
+            <a href="${BASE_URL}/pos/durum.html?token=${data.token}" style="background:${QNB_COLOR};color:#fff;padding:14px 30px;border-radius:25px;text-decoration:none;font-weight:bold;display:inline-block">
               Durumu Görüntüle
             </a>
           </div>
