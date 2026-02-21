@@ -980,7 +980,7 @@
 
             if (!confirm('Durumu güncelleyip müşteriye SMS/Email göndermek istiyor musunuz?')) return;
 
-            const res = await apiCall(`/ basvuru / ${currentActiveId}/durum`, {
+            const res = await apiCall(`/basvuru/${currentActiveId}/durum`, {
                 method: 'PUT',
                 body: JSON.stringify({ durum, aciklama })
             });
