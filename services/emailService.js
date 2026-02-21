@@ -1,10 +1,11 @@
 const nodemailer = require('nodemailer');
 
-// SMTP Ayarları - .env veya environment variable ile configure edilmeli
+// SMTP Ayarları - Render gibi bulut sistemlerde port 465 (SSL) daha kararlıdır.
+const smtpPort = parseInt(process.env.SMTP_PORT) || 465;
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: parseInt(process.env.SMTP_PORT) || 587,
-  secure: false,
+  port: smtpPort,
+  secure: smtpPort === 465, // Port 465 ise secure: true, 587 ise false olmalı
   auth: {
     user: process.env.SMTP_USER || 'your-email@gmail.com',
     pass: process.env.SMTP_PASS || 'your-app-password'
