@@ -104,6 +104,12 @@ const initializeDatabase = async () => {
       console.log("Migration: vergi_no kolonu eklendi.");
     } catch (e) { } // Ignores error if column already exists
 
+    // Auto-migration for existing databases: cihaz_detaylari
+    try {
+      await pool.query('ALTER TABLE applications ADD COLUMN cihaz_detaylari TEXT');
+      console.log("Migration: cihaz_detaylari kolonu eklendi.");
+    } catch (e) { } // Ignores error if column already exists
+
     // Default admin eklentisi
     const bcrypt = require('bcryptjs');
     const adminExists = await pool.query('SELECT id FROM admin_users WHERE email = $1', ['admin@pos.com']);

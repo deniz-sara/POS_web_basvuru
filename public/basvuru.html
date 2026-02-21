@@ -277,6 +277,24 @@
                 uyari.style.display = 'none';
             }
 
+            // Mevcut girilmiş verileri kaybetmemek için hafızaya al
+            let savedData = [];
+            for (let i = 1; i <= 50; i++) {
+                const seriEl = document.querySelector(`input[name="cihaz_${i}_seri"]`);
+                const ilEl = document.getElementById(`cihaz_${i}_il`);
+                const ilceEl = document.getElementById(`cihaz_${i}_ilce`);
+                const adresEl = document.querySelector(`textarea[name="cihaz_${i}_adres"]`);
+
+                if (seriEl || ilEl || ilceEl || adresEl) {
+                    savedData[i] = {
+                        seri: seriEl ? seriEl.value : '',
+                        il: ilEl ? ilEl.value : '',
+                        ilce: ilceEl ? ilceEl.value : '',
+                        adres: adresEl ? adresEl.value : ''
+                    };
+                }
+            }
+
             container.innerHTML = '';
             if (adet <= 0 || !mulkiyet) return;
 
@@ -343,6 +361,27 @@
                 selects.forEach(select => {
                     iller.forEach(il => { select.add(new Option(il, il)); });
                 });
+            }
+
+            // Hafızaya alınan verileri geri yükle
+            for (let i = 1; i <= adet; i++) {
+                if (savedData[i]) {
+                    const seriEl = document.querySelector(`input[name="cihaz_${i}_seri"]`);
+                    const ilEl = document.getElementById(`cihaz_${i}_il`);
+                    const ilceEl = document.getElementById(`cihaz_${i}_ilce`);
+                    const adresEl = document.querySelector(`textarea[name="cihaz_${i}_adres"]`);
+
+                    if (seriEl && savedData[i].seri) seriEl.value = savedData[i].seri;
+                    if (ilEl && savedData[i].il) {
+                        ilEl.value = savedData[i].il;
+                        updateCihazIlce(i, savedData[i].il);
+                        setTimeout((idx, val) => {
+                            const tempIlce = document.getElementById(`cihaz_${idx}_ilce`);
+                            if (tempIlce) tempIlce.value = val;
+                        }, 50, i, savedData[i].ilce);
+                    }
+                    if (adresEl && savedData[i].adres) adresEl.value = savedData[i].adres;
+                }
             }
         }
 
@@ -411,7 +450,6 @@
                 setTimeout(() => { ilceEl.value = ilkIlce; }, 50);
                 adresEl.value = ilkAdres;
             }
-            alert("1. Cihazın adresi diğer cihazlara başarıyla kopyalandı!");
         }
 
         function initSehirler() {
