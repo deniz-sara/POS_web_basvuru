@@ -4,7 +4,7 @@ const axios = require('axios');
 const NETGSM_USERCODE = process.env.NETGSM_USERCODE || 'KULLANICI_KODUNUZ';
 const NETGSM_PASSWORD = process.env.NETGSM_PASSWORD || 'SIFRENIZ';
 const NETGSM_HEADER = process.env.NETGSM_HEADER || 'FIRMAUNVANI'; // Onaylı başlık
-const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
+const BASE_URL = process.env.BASE_URL || process.env.RENDER_EXTERNAL_URL || 'http://localhost:3000';
 
 async function sendSMS(telefon, mesaj) {
     // Telefon numarasını Netgsm formatına çevir (5XXXXXXXXX)

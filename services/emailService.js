@@ -4,7 +4,7 @@ const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'basvuru-ekibi@sirketiniz.com';
 const BREVO_API_KEY = process.env.BREVO_API_KEY ? process.env.BREVO_API_KEY.replace(/['"]/g, '').trim() : '';
 const SENDER_EMAIL = process.env.SMTP_USER || 'noreply@pos.com'; // Brevo'da onaylı Gmail adresiniz
 const SENDER_NAME = 'POS Başvuru Sistemi';
-const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
+const BASE_URL = process.env.BASE_URL || process.env.RENDER_EXTERNAL_URL || 'http://localhost:3000';
 
 // Email şablonları
 const templates = {
