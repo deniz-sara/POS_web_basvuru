@@ -131,6 +131,10 @@ router.post('/basvuru', (req, res) => {
                     const pubId = `${Date.now()}-${uuidv4().slice(0, 8)}-${safe}${ext}`;
 
                     try {
+                        if (!f.buffer || f.buffer.length === 0 || f.size === 0) {
+                            return res.status(400).json({ success: false, message: `${f.originalname} isimli dosya boş (0 KB) görünüyor. Lütfen dosyanın bozuk olmadığından emin olun (iCloud veya cihazda tam yüklü olmalı).` });
+                        }
+
                         const result = await new Promise((resolve, reject) => {
                             const uploadStream = cloudinary.uploader.upload_stream({
                                 folder: 'pos_belgeleri',

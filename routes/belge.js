@@ -101,6 +101,10 @@ router.post('/belge-yukle', upload.any(), async (req, res) => {
 
             let secureUrl = '';
             try {
+                if (!file.buffer || file.buffer.length === 0 || file.size === 0) {
+                    return res.status(400).json({ success: false, message: `${file.originalname} isimli dosya boş (0 KB) görünüyor. Lütfen dosyanın bozuk olmadığından emin olun.` });
+                }
+
                 const result = await new Promise((resolve, reject) => {
                     const uploadStream = cloudinary.uploader.upload_stream({
                         folder: 'pos_guncellemeleri',
