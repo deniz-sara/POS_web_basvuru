@@ -397,6 +397,60 @@
         }
 
         /* Mobile Responsive for Admin Panel */
+        .preview-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .preview-modal {
+            background: #fff;
+            width: 95%;
+            max-width: 1000px;
+            height: 90vh;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .preview-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f9fafb;
+            font-weight: 600;
+            color: #111;
+        }
+
+        .preview-content {
+            flex: 1;
+            overflow: auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #e5e7eb;
+            position: relative;
+        }
+
+        .preview-content iframe,
+        .preview-content img {
+            width: 100%;
+            height: 100%;
+            border: none;
+            object-fit: contain;
+        }
+
         @media (max-width: 768px) {
             body {
                 flex-direction: column;
@@ -1026,7 +1080,12 @@
                             <span style="font-size:14px;font-weight:500">${d.belge_adi}</span>
                             <div style="font-size:11px;color:#888">${d.durum === 'eksik' ? 'Eksik İşaretlendi' : new Date(d.yukleme_tarihi).toLocaleString()}</div>
                         </div>
-                        ${fileUrl ? `<a href="${fileUrl}" target="_blank" class="doc-link">İndir/Gör</a>` : '<span style="color:red;font-size:12px">Bekleniyor</span>'}
+                        ${fileUrl ? `
+                            <div style="display:flex; gap:8px;">
+                                <a href="${fileUrl}" download="${d.orijinal_ad || 'belge'}" class="doc-link" style="color:var(--primary); font-weight:600; text-decoration:underline;">İndir</a>
+                                <button onclick="openPreview('${fileUrl}', '${d.belge_adi}')" class="doc-link" style="background:var(--secondary); color:#fff; border:none; padding:4px 10px; border-radius:4px; font-size:12px; cursor:pointer;">Önizle</button>
+                            </div>
+                        ` : '<span style="color:red;font-size:12px">Bekleniyor</span>'}
                     </li>
                 `;
             });
@@ -1123,7 +1182,39 @@
 
         // Init
         loadDashboard();
+
+        // Preview Modal Functions
+        function openPreview(url, title) {
+            document.getElementById('previewTitle').innerText = title;
+            const contentDiv = document.getElementById('previewContent');
+
+            // Eğer PDF ise veya veritabanından çekilen gizli PDF verisi ise iframe ile göster
+            if (url.toLowerCase().includes('.pdf') || url.includes('/api/admin/dosya-indir')) {
+                contentDiv.innerHTML = `<iframe src="${url}"></iframe>`;
+            } else {
+                contentDiv.innerHTML = `<img src="${url}" alt="Önizleme">`;
+            }
+
+            document.getElementById('previewOverlay').style.display = 'flex';
+        }
+
+        function closePreview() {
+            document.getElementById('previewOverlay').style.display = 'none';
+            document.getElementById('previewContent').innerHTML = '';
+        }
     </script>
+
+    <!-- Preview Modal Overlay -->
+    <div id="previewOverlay" class="preview-modal-overlay">
+        <div class="preview-modal">
+            <div class="preview-header">
+                <span id="previewTitle">Önizleme</span>
+                <button onclick="closePreview()"
+                    style="background:none; border:none; font-size:24px; cursor:pointer;">&times;</button>
+            </div>
+            <div class="preview-content" id="previewContent"></div>
+        </div>
+    </div>
     <div style="position: fixed; bottom: 10px; right: 20px; font-size: 11px; color: #aaa; z-index: 1000;">Developer:
         Deniz Şara</div>
 </body>
