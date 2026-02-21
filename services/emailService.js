@@ -1,18 +1,9 @@
-const nodemailer = require('nodemailer');
-
-// SMTP Ayarları - Render gibi bulut sistemlerde port 465 (SSL) daha kararlıdır.
-const smtpPort = parseInt(process.env.SMTP_PORT) || 465;
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: smtpPort,
-  secure: smtpPort === 465, // Port 465 ise secure: true, 587 ise false olmalı
-  auth: {
-    user: process.env.SMTP_USER || 'your-email@gmail.com',
-    pass: process.env.SMTP_PASS || 'your-app-password'
-  }
-});
+const axios = require('axios');
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'basvuru-ekibi@sirketiniz.com';
+const BREVO_API_KEY = process.env.BREVO_API_KEY; // Brevo'dan alınan API Key
+const SENDER_EMAIL = process.env.SMTP_USER || 'noreply@pos.com'; // Brevo'da onaylı Gmail adresiniz
+const SENDER_NAME = 'POS Başvuru Sistemi';
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 
 // Email şablonları
@@ -143,22 +134,37 @@ const templates = {
 
 async function sendEmail(to, templateName, data) {
   console.log(`[EMAIL] '${templateName}' şablonu ile ${to} adresine gönderim başlıyor...`);
+
+  if (!BREVO_API_KEY) {
+    console.error(`❌ Email GÖNDERİLEMEDİ: BREVO_API_KEY tanımlanmamış! Lütfen Render ayarlarına ekleyin.`);
+    return { success: false, error: 'API Key eksik' };
+  }
+
   try {
     const template = templates[templateName](data);
-    console.log(`[EMAIL] Şablon hazırlandı. SMTP ile bağlantı kuruluyor...`);
+    console.log(`[EMAIL] Şablon hazırlandı. Brevo API isteği atılıyor...`);
 
-    const info = await transporter.sendMail({
-      from: `"POS Başvuru Sistemi" <${process.env.SMTP_USER || 'noreply@pos.com'}>`,
-      to,
+    const payload = {
+      sender: { name: SENDER_NAME, email: SENDER_EMAIL },
+      to: [{ email: to }],
       subject: template.subject,
-      html: template.html
+      htmlContent: template.html
+    };
+
+    const response = await axios.post('https://api.brevo.com/v3/smtp/email', payload, {
+      headers: {
+        'Accept': 'application/json',
+        'api-key': BREVO_API_KEY,
+        'Content-Type': 'application/json'
+      }
     });
-    console.log(`✅ Email başarıyla gönderildi: ${templateName} → ${to} | ID: ${info.messageId}`);
+
+    console.log(`✅ Email başarıyla gönderildi: ${templateName} → ${to} | Brevo ID: ${response.data.messageId}`);
     return { success: true };
   } catch (err) {
-    console.error(`❌ Email GÖNDERİLEMEDİ (${templateName} -> ${to}):`, err.message);
-    if (err.response) console.error(`Detay:`, err.response);
-    return { success: false, error: err.message };
+    const errorMsg = err.response && err.response.data ? JSON.stringify(err.response.data) : err.message;
+    console.error(`❌ Email GÖNDERİLEMEDİ (${templateName} -> ${to}):`, errorMsg);
+    return { success: false, error: errorMsg };
   }
 }
 
