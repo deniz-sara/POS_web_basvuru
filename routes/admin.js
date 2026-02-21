@@ -184,21 +184,50 @@ router.get('/export', authMiddleware, async (req, res) => {
         const basvurularRes = await db.query('SELECT * FROM applications ORDER BY basvuru_tarihi DESC');
         const basvurular = basvurularRes.rows;
 
-        const formattedData = basvurular.map(b => ({
-            'Başvuru No': b.basvuru_no,
-            'Firma Unvanı': b.firma_unvani,
-            'TC No': b.tc_no || '-',
-            'Vergi No': b.vergi_no || '-',
-            'Yetkili': b.yetkili_ad_soyad,
-            'Telefon': b.telefon,
-            'Email': b.email,
-            'İl': b.il,
-            'POS Adedi': b.pos_adedi,
-            'Cihaz Detayları': b.cihaz_detaylari || '',
-            'Tahmini Ciro': b.aylik_ciro,
-            'Durum': b.durum,
-            'Tarih': b.basvuru_tarihi
-        }));
+        const durumLabels = {
+            alingi: 'Başvuru Alındı',
+            inceleme: 'Evrak İnceleme',
+            degerlendirme: 'Değerlendirme',
+            ek_bilgi: 'Evrak Bekleniyor',
+            onaylandi: 'Onaylandı',
+            reddedildi: 'Reddedildi'
+        };
+
+        const formattedData = basvurular.map(b => {
+            let cihazlarStr = '';
+            if (b.cihaz_detaylari) {
+                try {
+                    const parsed = JSON.parse(b.cihaz_detaylari);
+                    const isOwn = parsed.mulkiyet === 'Kendi Cihazim';
+                    const prefix = isOwn ? '[Müşteriye Ait] ' : '[QNBpay Cihaz Talebi] ';
+                    if (parsed.cihazlar && parsed.cihazlar.length > 0) {
+                        cihazlarStr = prefix + parsed.cihazlar.map(c => {
+                            let parts = [`Cihaz ${c.index}: ${c.adres} (${c.ilce}/${c.il})`];
+                            if (c.seri_no) parts.push(`Seri No: ${c.seri_no}`);
+                            return parts.join(' - ');
+                        }).join(' | ');
+                    }
+                } catch (e) {
+                    cihazlarStr = 'Format Hatası';
+                }
+            }
+
+            return {
+                'Başvuru No': b.basvuru_no,
+                'Firma Unvanı': b.firma_unvani,
+                'TC No': b.tc_no || '-',
+                'Vergi No': b.vergi_no || '-',
+                'Yetkili': b.yetkili_ad_soyad,
+                'Telefon': b.telefon,
+                'Email': b.email,
+                'İl': b.il,
+                'POS Adedi': b.pos_adedi,
+                'Cihaz Detayları': cihazlarStr,
+                'Tahmini Ciro': b.aylik_ciro,
+                'Durum': durumLabels[b.durum] || b.durum,
+                'Tarih': b.basvuru_tarihi
+            };
+        });
 
         const worksheet = xlsx.utils.json_to_sheet(formattedData);
         const workbook = xlsx.utils.book_new();
