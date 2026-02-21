@@ -558,6 +558,7 @@
                                 <th>Email</th>
                                 <th>Eklenme Tarihi</th>
                                 <th>Durum</th>
+                                <th>İşlemler</th>
                             </tr>
                         </thead>
                         <tbody id="usersTableBody">
@@ -681,10 +682,11 @@
     <div class="modal-overlay" id="userModal">
         <div class="modal" style="max-width: 400px;">
             <div class="modal-header">
-                <h3>Yeni Yönetici Ekle</h3>
+                <h3 id="u_modal_title">Yeni Yönetici Ekle</h3>
                 <button class="modal-close" onclick="closeUserModal()">&times;</button>
             </div>
             <div class="modal-body" style="grid-template-columns: 1fr; gap: 15px;">
+                <input type="hidden" id="u_edit_id">
                 <div class="form-group">
                     <label>Ad Soyad</label>
                     <input type="text" id="u_ad" placeholder="Örn: Ahmet Yılmaz">
@@ -694,11 +696,12 @@
                     <input type="email" id="u_email" placeholder="Örn: ahmet@sirket.com">
                 </div>
                 <div class="form-group">
-                    <label>Şifre</label>
+                    <label>Şifre <span id="u_pass_hint"
+                            style="font-size:11px; font-weight:normal; color:#666;"></span></label>
                     <input type="password" id="u_pass" placeholder="Geçici şifre belirleyin">
                 </div>
-                <button class="btn btn-primary" style="width: 100%; margin-top: 10px;" onclick="createUser()">Yöneticiyi
-                    Ekle</button>
+                <button class="btn btn-primary" id="u_modal_btn" style="width: 100%; margin-top: 10px;"
+                    onclick="saveUser()">Yöneticiyi Ekle</button>
             </div>
         </div>
     </div>
@@ -814,16 +817,26 @@
                         <td>${u.email}</td>
                         <td>${new Date(u.olusturma_tarihi).toLocaleDateString('tr-TR')}</td>
                         <td><span class="badge ${u.aktif ? 'onaylandi' : 'reddedildi'}">${u.aktif ? 'Aktif' : 'Pasif'}</span></td>
+                        <td>
+                            <button class="btn btn-outline" style="padding:4px 8px; font-size:11px;" onclick="openUserModal(${u.id}, '${u.email}', '${u.ad_soyad}')">Düzenle</button>
+                            <button class="btn ${u.aktif ? 'btn-outline' : 'btn-primary'}" style="padding:4px 8px; font-size:11px; margin-left:5px; border-color:var(--error); color:${u.aktif ? 'var(--error)' : 'white'}; background:${u.aktif ? 'transparent' : 'var(--error)'}" onclick="toggleUserStatus(${u.id}, ${u.aktif})">${u.aktif ? 'Pasif Yap' : 'Aktifleştir'}</button>
+                        </td>
                     `;
                     tbody.appendChild(tr);
                 });
             }
         }
 
-        function openUserModal() {
-            document.getElementById('u_email').value = '';
+        function openUserModal(id = null, email = '', name = '') {
+            document.getElementById('u_edit_id').value = id || '';
+            document.getElementById('u_email').value = email;
             document.getElementById('u_pass').value = '';
-            document.getElementById('u_ad').value = '';
+            document.getElementById('u_ad').value = name;
+
+            document.getElementById('u_modal_title').innerText = id ? 'Yönetici Düzenle' : 'Yeni Yönetici Ekle';
+            document.getElementById('u_modal_btn').innerText = id ? 'Değişiklikleri Kaydet' : 'Yönetici Ekle';
+            document.getElementById('u_pass_hint').innerText = id ? '(Değiştirmeyecekseniz boş bırakın)' : '';
+
             document.getElementById('userModal').style.display = 'flex';
         }
 
@@ -831,21 +844,40 @@
             document.getElementById('userModal').style.display = 'none';
         }
 
-        async function createUser() {
+        async function saveUser() {
+            const id = document.getElementById('u_edit_id').value;
             const email = document.getElementById('u_email').value;
             const password = document.getElementById('u_pass').value;
             const ad_soyad = document.getElementById('u_ad').value;
 
-            if (!email || !password || !ad_soyad) return alert('Lütfen tüm alanları doldurun.');
+            if (!email || !ad_soyad || (!id && !password)) return alert('Lütfen zorunlu alanları doldurun.');
 
-            const res = await apiCall('/user', {
-                method: 'POST',
+            const endpoint = id ? `/user/${id}` : '/user';
+            const method = id ? 'PUT' : 'POST';
+
+            const res = await apiCall(endpoint, {
+                method,
                 body: JSON.stringify({ email, password, ad_soyad })
             });
 
             if (res.success) {
-                alert('Yönetici başarıyla eklendi.');
+                alert(`Yönetici başarıyla ${id ? 'güncellendi' : 'eklendi'}.`);
                 closeUserModal();
+                loadUsers();
+            } else {
+                alert(res.message);
+            }
+        }
+
+        async function toggleUserStatus(id, currentlyActive) {
+            if (!confirm(`Bu yöneticiyi ${currentlyActive ? 'pasif' : 'aktif'} yapmak istediğinize emin misiniz?`)) return;
+
+            const res = await apiCall(`/user/${id}/status`, {
+                method: 'PUT',
+                body: JSON.stringify({ aktif: !currentlyActive })
+            });
+
+            if (res.success) {
                 loadUsers();
             } else {
                 alert(res.message);
@@ -874,7 +906,7 @@
                     const tr = document.createElement('tr');
                     tr.onclick = () => openModal(b.id);
                     tr.innerHTML = `
-                        <td>${new Date(b.basvuru_tarihi).toLocaleDateString('tr-TR')}</td>
+                < td > ${new Date(b.basvuru_tarihi).toLocaleDateString('tr-TR')}</td >
                         <td style="font-weight:600;color:var(--primary)">${b.basvuru_no}</td>
                         <td>${b.firma_unvani}</td>
                         <td>${b.il || '-'}</td>
@@ -882,7 +914,7 @@
                         <td><span class="badge ${b.durum}">${DURUM_LABELS[b.durum] || b.durum}</span>
                             ${b.eksik_belge > 0 ? `<br><span style="font-size:11px;color:red">${b.eksik_belge} belge eksik</span>` : ''}
                         </td>
-                    `;
+            `;
                     tbody.appendChild(tr);
                 });
             }
@@ -896,7 +928,7 @@
 
         async function openModal(id) {
             currentActiveId = id;
-            const data = await apiCall(`/basvuru/${id}`);
+            const data = await apiCall(`/ basvuru / ${id} `);
             if (!data || !data.success) return alert('Veri alınamadı');
 
             const b = data.basvuru;
