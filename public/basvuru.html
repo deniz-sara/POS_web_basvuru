@@ -360,18 +360,27 @@
         function validateForm() {
             const n = currentTab;
             const content = document.getElementsByClassName("step-content")[n];
-            const inputs = content.querySelectorAll("input[required], select[required], textarea[required]");
+            const inputs = content.querySelectorAll("input, select, textarea");
 
             let valid = true;
+            let firstInvalid = null;
+
             for (let i = 0; i < inputs.length; i++) {
-                if (!inputs[i].value) {
+                if (!inputs[i].checkValidity()) {
                     inputs[i].classList.add('invalid');
                     inputs[i].style.borderColor = 'var(--error)';
                     valid = false;
+                    if (!firstInvalid) firstInvalid = inputs[i];
                 } else {
+                    inputs[i].classList.remove('invalid');
                     inputs[i].style.borderColor = 'var(--border)';
                 }
             }
+
+            if (firstInvalid) {
+                firstInvalid.reportValidity();
+            }
+
             return valid;
         }
 
