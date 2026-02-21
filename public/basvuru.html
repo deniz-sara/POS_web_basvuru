@@ -153,9 +153,24 @@
                 <!-- STEP 3: POS Talep -->
                 <div class="step-content" id="step-3">
                     <div class="form-grid">
+                        <div class="form-group full-width">
+                            <label>Cihaz Mülkiyeti <span class="required">*</span></label>
+                            <select name="cihaz_mulkiyeti" id="cihaz_mulkiyeti" required
+                                onchange="renderCihazFormlari()">
+                                <option value="">Seçiniz...</option>
+                                <option value="QNBpay">QNBpay'den Yeni Cihaz Talep Ediyorum</option>
+                                <option value="Kendi Cihazim">Kendi Cihazımı Kullanacağım</option>
+                            </select>
+                            <div id="kendiCihazimUyari"
+                                style="display: none; margin-top: 8px; font-size: 13px; color: var(--error); background: #fef2f2; padding: 10px; border-radius: 6px; border: 1px solid #fecaca;">
+                                <strong>Önemli Uyarı:</strong> Mevcut cihazınızla çalışmak istemeniz durumunda; yalnızca
+                                <strong>Pavo ve Hugin</strong> marka cihazlarla entegrasyonumuz bulunmaktadır.
+                            </div>
+                        </div>
                         <div class="form-group">
-                            <label>Talep Edilen POS Adedi <span class="required">*</span></label>
-                            <input type="number" name="pos_adedi" required min="1" max="50" value="1">
+                            <label>Talep Edilen / Mevcut POS Adedi <span class="required">*</span></label>
+                            <input type="number" name="pos_adedi" id="pos_adedi" required min="1" max="50" value="1"
+                                oninput="renderCihazFormlari()">
                         </div>
                         <div class="form-group">
                             <label>POS Tipi <span class="required">*</span></label>
@@ -166,67 +181,71 @@
                                 <option value="Yazarkasa">Yazarkasa POS / ÖKC</option>
                             </select>
                         </div>
-                        <div class="form-group">
-                            <label>Tahmini Aylık Ciro (TL) <span class="required">*</span></label>
-                            <input type="text" name="aylik_ciro" required placeholder="10,000"
-                                oninput="formatCurrency(this)">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- STEP 4: Evraklar -->
-                <div class="step-content" id="step-4">
-                    <p style="margin-bottom: 20px; color: var(--text-light); font-size: 14px;">
-                        Lütfen başvuru için gerekli evrakları PDF, JPG veya PNG formatında (Maks 15MB) yükleyiniz.
-                        Zorunlu evrakları yüklemeden başvuruyu tamamlayamazsınız.
-                    </p>
-
-                    <div class="file-upload-grid" id="fileGrid">
-                        <!-- JS Tarafından Doldurulacak -->
                     </div>
 
-                    <div style="margin-top: 30px;">
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="kvkk" required>
-                            <label for="kvkk">KVKK Aydınlatma Metni'ni okudum ve kabul ediyorum. <span
-                                    class="required">*</span></label>
-                        </div>
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="onay" required>
-                            <label for="onay">Verdiğim bilgilerin doğruluğunu ve başvuru koşullarını kabul ediyorum.
-                                <span class="required">*</span></label>
-                        </div>
-                    </div>
+                    <!-- Dynamic Cihaz Detayları Container -->
+                    <div id="cihazlarContainer" style="margin-top: 25px;"></div>
                 </div>
-
-                <!-- Success Screen -->
-                <div class="step-content success-state" id="step-5">
-                    <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
-                        <circle class="checkmark__circle" cx="26" cy="26" r="25" fill="none" />
-                        <path class="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8" />
-                    </svg>
-                    <h2>Başvurunuz Alındı!</h2>
-                    <p>Referans Numaranız: <strong id="successBasvuruNo">---</strong>
-                        <button type="button" onclick="copyBasvuruNo()"
-                            style="margin-left: 10px; cursor: pointer; border: none; background: var(--primary); color: white; border-radius: 4px; padding: 4px 8px; font-size: 12px;">Kopyala</button>
-                    </p>
-                    <p style="font-size: 14px; color: var(--text-light);">Başvurunuz alınmış olup değerlendirme sürecine
-                        geçilmiştir. Durumu takip etmeniz için detaylar e-posta ve SMS olarak gönderilmiştir.</p>
-                    <div style="margin-top: 30px;">
-                        <a href="/pos/sorgula.html" id="trackLink" class="btn btn-next">Başvuru Durumu Sorgula</a>
-                    </div>
+                <div class="form-group">
+                    <label>Tahmini Aylık Ciro (TL) <span class="required">*</span></label>
+                    <input type="text" name="aylik_ciro" required placeholder="10,000" oninput="formatCurrency(this)">
                 </div>
-
-                <!-- Buttons -->
-                <div class="btn-group" id="btnGroup">
-                    <button type="button" class="btn btn-prev hidden" id="prevBtn" onclick="nextPrev(-1)">Geri</button>
-                    <div style="flex:1"></div>
-                    <button type="button" class="btn btn-next" id="nextBtn" onclick="nextPrev(1)">İleri</button>
-                    <button type="button" class="btn btn-submit hidden" id="submitBtn" onclick="submitForm()">Başvuruyu
-                        Gönder</button>
-                </div>
-            </form>
         </div>
+    </div>
+
+    <!-- STEP 4: Evraklar -->
+    <div class="step-content" id="step-4">
+        <p style="margin-bottom: 20px; color: var(--text-light); font-size: 14px;">
+            Lütfen başvuru için gerekli evrakları PDF, JPG veya PNG formatında (Maks 15MB) yükleyiniz.
+            Zorunlu evrakları yüklemeden başvuruyu tamamlayamazsınız.
+        </p>
+
+        <div class="file-upload-grid" id="fileGrid">
+            <!-- JS Tarafından Doldurulacak -->
+        </div>
+
+        <div style="margin-top: 30px;">
+            <div class="checkbox-group">
+                <input type="checkbox" id="kvkk" required>
+                <label for="kvkk">KVKK Aydınlatma Metni'ni okudum ve kabul ediyorum. <span
+                        class="required">*</span></label>
+            </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="onay" required>
+                <label for="onay">Verdiğim bilgilerin doğruluğunu ve başvuru koşullarını kabul ediyorum.
+                    <span class="required">*</span></label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Screen -->
+    <div class="step-content success-state" id="step-5">
+        <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+            <circle class="checkmark__circle" cx="26" cy="26" r="25" fill="none" />
+            <path class="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8" />
+        </svg>
+        <h2>Başvurunuz Alındı!</h2>
+        <p>Referans Numaranız: <strong id="successBasvuruNo">---</strong>
+            <button type="button" onclick="copyBasvuruNo()"
+                style="margin-left: 10px; cursor: pointer; border: none; background: var(--primary); color: white; border-radius: 4px; padding: 4px 8px; font-size: 12px;">Kopyala</button>
+        </p>
+        <p style="font-size: 14px; color: var(--text-light);">Başvurunuz alınmış olup değerlendirme sürecine
+            geçilmiştir. Durumu takip etmeniz için detaylar e-posta ve SMS olarak gönderilmiştir.</p>
+        <div style="margin-top: 30px;">
+            <a href="/pos/sorgula.html" id="trackLink" class="btn btn-next">Başvuru Durumu Sorgula</a>
+        </div>
+    </div>
+
+    <!-- Buttons -->
+    <div class="btn-group" id="btnGroup">
+        <button type="button" class="btn btn-prev hidden" id="prevBtn" onclick="nextPrev(-1)">Geri</button>
+        <div style="flex:1"></div>
+        <button type="button" class="btn btn-next" id="nextBtn" onclick="nextPrev(1)">İleri</button>
+        <button type="button" class="btn btn-submit hidden" id="submitBtn" onclick="submitForm()">Başvuruyu
+            Gönder</button>
+    </div>
+    </form>
+    </div>
     </div>
 
     <script src="iller.js"></script>
@@ -239,7 +258,7 @@
             { id: 'faaliyet_belgesi', mask: 'Faaliyet Belgesi', required: true, desc: 'Oda kayıt belgesi' },
             { id: 'gmu_muafiyet', mask: 'GMU ve Muafiyet Belgesi', required: false, desc: 'İsteğe bağlı' },
             { id: 'kira_tapu', mask: 'QNBpay Sözleşme', required: true, desc: 'Zorunlu İmzalı Sözleşme' },
-            { id: 'banka_hesabi', mask: 'Banka Hesap Cüzdanı', required: false, desc: 'İsteğe bağlı' }
+            { id: 'banka_hesabi', mask: 'Banka Hesap Cüzdanı', required: true, desc: 'Zorunlu İmza Sirk.' }
         ];
 
         let currentTab = 0;
@@ -249,6 +268,155 @@
             renderFileGrid();
             initSehirler();
             showTab(currentTab);
+        }
+
+        function renderCihazFormlari() {
+            const mulkiyet = document.getElementById('cihaz_mulkiyeti').value;
+            const adet = parseInt(document.getElementById('pos_adedi').value) || 0;
+            const container = document.getElementById('cihazlarContainer');
+            const uyari = document.getElementById('kendiCihazimUyari');
+
+            if (mulkiyet === 'Kendi Cihazim') {
+                uyari.style.display = 'block';
+            } else {
+                uyari.style.display = 'none';
+            }
+
+            container.innerHTML = '';
+            if (adet <= 0 || !mulkiyet) return;
+
+            // Global adres kopyalama aracı
+            let toolsHtml = `
+                <div style="background: #f8fafc; padding: 15px; border-radius: 6px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
+                    <div style="font-size: 14px; font-weight: 600; margin-bottom: 10px; color: var(--primary);">Hızlı Adres Doldurma</div>
+                    <div class="checkbox-group" style="margin-bottom: 8px;">
+                        <input type="checkbox" id="copyCenterAddress" onchange="copyAddressFromStep1(this)">
+                        <label for="copyCenterAddress" style="font-size: 13px;">Kullanım adresi Firma Merkez Adresi (1. Adım) ile aynıdır.</label>
+                    </div>
+            `;
+            if (adet > 1) {
+                toolsHtml += `
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="copyAllFromFirst" onchange="copyFirstDeviceAddressToAll(this)">
+                        <label for="copyAllFromFirst" style="font-size: 13px;">Tüm cihazlar 1. Cihaz ile aynı adreste kullanılacaktır.</label>
+                    </div>
+                `;
+            }
+            toolsHtml += `</div>`;
+            container.innerHTML += toolsHtml;
+
+            // Dinamik Cihaz Kutuları
+            for (let i = 1; i <= adet; i++) {
+                const isSeriRequired = mulkiyet === 'Kendi Cihazim' ? 'required' : '';
+                const seriHtml = mulkiyet === 'Kendi Cihazim'
+                    ? `<div class="form-group full-width">
+                           <label>Cihaz ${i} Seri No <span class="required">*</span></label>
+                           <input type="text" name="cihaz_${i}_seri" required placeholder="Cihazın arkasındaki S/N numarası">
+                       </div>`
+                    : '';
+
+                container.innerHTML += `
+                    <div class="cihaz-box" style="border: 1px solid var(--border); padding: 20px; border-radius: 8px; margin-bottom: 20px; background: #fff;">
+                        <h4 style="margin-top: 0; margin-bottom: 15px; color: var(--primary); border-bottom: 1px solid var(--border); padding-bottom: 8px;">Cihaz ${i} Detayları</h4>
+                        <div class="form-grid">
+                            ${seriHtml}
+                            <div class="form-group">
+                                <label>İl <span class="required">*</span></label>
+                                <select name="cihaz_${i}_il" id="cihaz_${i}_il" class="cihaz-il" required onchange="updateCihazIlce(${i}, this.value)">
+                                    <option value="">İl Seçiniz</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>İlçe <span class="required">*</span></label>
+                                <select name="cihaz_${i}_ilce" id="cihaz_${i}_ilce" class="cihaz-ilce" required disabled>
+                                    <option value="">Önce İl Seçiniz</option>
+                                </select>
+                            </div>
+                            <div class="form-group full-width">
+                                <label>Kullanım Açık Adresi <span class="required">*</span></label>
+                                <textarea name="cihaz_${i}_adres" class="cihaz-adres" required rows="2" placeholder="Cihazın nerede kullanılacağı"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // İlleri doldur
+            if (typeof IL_ILCE !== 'undefined') {
+                const iller = Object.keys(IL_ILCE).sort((a, b) => a.localeCompare(b, 'tr'));
+                const selects = document.querySelectorAll('.cihaz-il');
+                selects.forEach(select => {
+                    iller.forEach(il => { select.add(new Option(il, il)); });
+                });
+            }
+        }
+
+        function updateCihazIlce(index, secilenIl) {
+            const ilceSelect = document.getElementById(`cihaz_${index}_ilce`);
+            ilceSelect.innerHTML = '<option value="">İlçe Seçiniz</option>';
+            if (secilenIl && IL_ILCE[secilenIl]) {
+                IL_ILCE[secilenIl].forEach(ilce => {
+                    ilceSelect.add(new Option(ilce, ilce));
+                });
+                ilceSelect.disabled = false;
+            } else {
+                ilceSelect.innerHTML = '<option value="">Önce İl Seçiniz</option>';
+                ilceSelect.disabled = true;
+            }
+        }
+
+        function copyAddressFromStep1(checkbox) {
+            const merkezIl = document.getElementById('ilSelect').value;
+            const merkezIlce = document.getElementById('ilceSelect').value;
+            const merkezAdres = document.querySelector('textarea[name="adres"]').value;
+
+            const adet = parseInt(document.getElementById('pos_adedi').value) || 0;
+
+            for (let i = 1; i <= adet; i++) {
+                const ilEl = document.getElementById(`cihaz_${i}_il`);
+                const ilceEl = document.getElementById(`cihaz_${i}_ilce`);
+                const adresEl = document.querySelector(`textarea[name="cihaz_${i}_adres"]`);
+
+                if (checkbox.checked) {
+                    ilEl.value = merkezIl;
+                    updateCihazIlce(i, merkezIl);
+                    setTimeout(() => { ilceEl.value = merkezIlce; }, 50); // wait for options to render
+                    adresEl.value = merkezAdres;
+
+                    // lock
+                    ilEl.style.backgroundColor = '#f3f4f6'; ilEl.style.pointerEvents = 'none';
+                    ilceEl.style.backgroundColor = '#f3f4f6'; ilceEl.style.pointerEvents = 'none';
+                    adresEl.setAttribute('readonly', true); adresEl.style.backgroundColor = '#f3f4f6';
+                } else {
+                    // unlock
+                    ilEl.style.backgroundColor = ''; ilEl.style.pointerEvents = 'auto';
+                    ilceEl.style.backgroundColor = ''; ilceEl.style.pointerEvents = 'auto';
+                    adresEl.removeAttribute('readonly'); adresEl.style.backgroundColor = '';
+                }
+            }
+        }
+
+        function copyFirstDeviceAddressToAll(checkbox) {
+            if (!checkbox.checked) return; // Only process on check
+
+            const adet = parseInt(document.getElementById('pos_adedi').value) || 0;
+            if (adet <= 1) return;
+
+            const ilkIl = document.getElementById('cihaz_1_il').value;
+            const ilkIlce = document.getElementById('cihaz_1_ilce').value;
+            const ilkAdres = document.querySelector('textarea[name="cihaz_1_adres"]').value;
+
+            for (let i = 2; i <= adet; i++) {
+                const ilEl = document.getElementById(`cihaz_${i}_il`);
+                const ilceEl = document.getElementById(`cihaz_${i}_ilce`);
+                const adresEl = document.querySelector(`textarea[name="cihaz_${i}_adres"]`);
+
+                ilEl.value = ilkIl;
+                updateCihazIlce(i, ilkIl);
+                setTimeout(() => { ilceEl.value = ilkIlce; }, 50);
+                adresEl.value = ilkAdres;
+            }
+            alert("1. Cihazın adresi diğer cihazlara başarıyla kopyalandı!");
         }
 
         function initSehirler() {
@@ -430,6 +598,30 @@
                 data.delete(b.id);
                 if (filesData[b.id]) data.append(b.id, filesData[b.id]);
             });
+
+            // --- Collect Dynamic Device Details ---
+            const cihazMulti = document.getElementById('cihaz_mulkiyeti').value;
+            const posAdedi = parseInt(document.getElementById('pos_adedi').value) || 0;
+            let cihazDetaylariArray = [];
+
+            if (posAdedi > 0 && cihazMulti) {
+                for (let i = 1; i <= posAdedi; i++) {
+                    let cihazObj = { index: i };
+                    const seriEl = document.querySelector(`input[name="cihaz_${i}_seri"]`);
+                    const ilEl = document.getElementById(`cihaz_${i}_il`);
+                    const ilceEl = document.getElementById(`cihaz_${i}_ilce`);
+                    const adresEl = document.querySelector(`textarea[name="cihaz_${i}_adres"]`);
+
+                    if (seriEl) cihazObj.seri_no = seriEl.value;
+                    if (ilEl) cihazObj.il = ilEl.value;
+                    if (ilceEl) cihazObj.ilce = ilceEl.value;
+                    if (adresEl) cihazObj.adres = adresEl.value;
+
+                    cihazDetaylariArray.push(cihazObj);
+                }
+            }
+            data.append('cihaz_detaylari', JSON.stringify({ mulkiyet: cihazMulti, cihazlar: cihazDetaylariArray }));
+            // --------------------------------------
 
             try {
                 const response = await fetch('/api/pos/basvuru', {

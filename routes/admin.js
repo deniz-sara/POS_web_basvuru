@@ -194,6 +194,7 @@ router.get('/export', authMiddleware, async (req, res) => {
             'Email': b.email,
             'İl': b.il,
             'POS Adedi': b.pos_adedi,
+            'Cihaz Detayları': b.cihaz_detaylari || '',
             'Tahmini Ciro': b.aylik_ciro,
             'Durum': b.durum,
             'Tarih': b.basvuru_tarihi

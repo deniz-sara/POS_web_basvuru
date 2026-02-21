@@ -69,7 +69,7 @@ const BELGE_TIPLERI = {
     banka_hesabi: 'Banka Hesap Cüzdanı'
 };
 
-const ZORUNLU_BELGELER = ['ticari_sicil', 'imza_sirkuleri', 'vergi_levhasi', 'kimlik_fotokopisi', 'faaliyet_belgesi', 'kira_tapu'];
+const ZORUNLU_BELGELER = ['ticari_sicil', 'imza_sirkuleri', 'vergi_levhasi', 'kimlik_fotokopisi', 'faaliyet_belgesi', 'kira_tapu', 'banka_hesabi'];
 
 // POST /api/pos/basvuru - Yeni başvuru
 router.post('/basvuru', upload.any(), async (req, res) => {
@@ -78,7 +78,7 @@ router.post('/basvuru', upload.any(), async (req, res) => {
             firma_unvani, tabela_adi, sirket_tipi, tc_no, vergi_no, vergi_dairesi,
             faaliyet_alani, adres, il, ilce,
             yetkili_ad_soyad, telefon, email, alt_telefon,
-            pos_adedi, pos_tipi, aylik_ciro
+            pos_adedi, pos_tipi, aylik_ciro, cihaz_detaylari
         } = req.body;
 
         // Zorunlu alan validasyonu
@@ -94,6 +94,22 @@ router.post('/basvuru', upload.any(), async (req, res) => {
         if (!/^05[0-9]{9}$/.test(telefon)) return res.status(400).json({ success: false, message: 'Telefon 05 ile başlayan 11 haneli rakam olmalıdır.' });
         const emailRegex = /^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}$/i;
         if (!emailRegex.test(email)) return res.status(400).json({ success: false, message: 'Geçersiz e-posta adresi.' });
+
+        // Dinamik Cihaz Detayları JSON Validasyonu
+        if (cihaz_detaylari) {
+            try {
+                const parsedCihaz = JSON.parse(cihaz_detaylari);
+                if (parsedCihaz.mulkiyet === 'Kendi Cihazim') {
+                    for (const c of parsedCihaz.cihazlar) {
+                        if (!c.seri_no || c.seri_no.trim() === '') {
+                            return res.status(400).json({ success: false, message: 'Kendi cihazını kullanan firmalar her cihaz için Seri No belirtmek zorundadır.' });
+                        }
+                    }
+                }
+            } catch (e) {
+                return res.status(400).json({ success: false, message: 'Geçersiz cihaz veri formatı.' });
+            }
+        }
 
         // Yüklenen dosyaları kontrol et
         const yuklenenBelgeler = {};
@@ -117,13 +133,13 @@ router.post('/basvuru', upload.any(), async (req, res) => {
         const stmt = `
       INSERT INTO applications (basvuru_no, token, firma_unvani, tabela_adi, sirket_tipi, tc_no, vergi_no, vergi_dairesi, ticaret_sicil_no,
         faaliyet_alani, adres, il, ilce, yetkili_ad_soyad, telefon, email, alt_telefon,
-        pos_adedi, pos_tipi, aylik_ciro)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+        pos_adedi, pos_tipi, aylik_ciro, cihaz_detaylari)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
       RETURNING id
     `;
         const result = await db.query(stmt, [basvuruNo, token, firma_unvani, tabela_adi || '', sirket_tipi, tc_no, vergi_no, vergi_dairesi, '',
             faaliyet_alani, adres, il, ilce, yetkili_ad_soyad, telefon, email, alt_telefon || null,
-            parseInt(pos_adedi), pos_tipi, parseFloat(aylik_ciro)]);
+            parseInt(pos_adedi), pos_tipi, parseFloat(aylik_ciro), cihaz_detaylari || null]);
 
         const applicationId = result.rows[0].id;
 

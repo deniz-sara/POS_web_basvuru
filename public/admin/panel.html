@@ -615,6 +615,14 @@
                         </div>
                     </div>
 
+                    <div class="detail-section" id="m_cihaz_section" style="display:none;">
+                        <h4>Cihaz Detayları <span id="m_cihaz_mulkiyet_badge"
+                                style="font-size:11px; padding:3px 8px; background:#ede9fe; color:#4c1d95; border-radius:4px; margin-left:10px; font-weight:normal; vertical-align:middle;"></span>
+                        </h4>
+                        <div id="m_cihaz_list"
+                            style="display:grid; grid-template-columns:1fr; gap:10px; margin-top:10px;"></div>
+                    </div>
+
                     <div class="detail-section">
                         <h4>Yüklenen Belgeler</h4>
                         <ul class="doc-list" id="m_docs"></ul>
@@ -906,6 +914,39 @@
             document.getElementById('m_email').innerText = b.email;
             document.getElementById('m_hacim').innerText = `${b.aylik_ciro} TL`;
             document.getElementById('m_pos').innerText = `${b.pos_adedi} Adet ${b.pos_tipi}`;
+
+            // Cihaz Detayları parse
+            const cihazSection = document.getElementById('m_cihaz_section');
+            const cihazList = document.getElementById('m_cihaz_list');
+            const cihazMulkiyetBadge = document.getElementById('m_cihaz_mulkiyet_badge');
+
+            cihazList.innerHTML = '';
+            cihazSection.style.display = 'none';
+
+            if (b.cihaz_detaylari) {
+                try {
+                    const parsed = JSON.parse(b.cihaz_detaylari);
+                    if (parsed && parsed.cihazlar && parsed.cihazlar.length > 0) {
+                        cihazSection.style.display = 'block';
+                        cihazMulkiyetBadge.innerText = parsed.mulkiyet === 'Kendi Cihazim' ? 'Müşteriye Ait Cihaz' : 'QNBpay Cihaz Talebi';
+
+                        parsed.cihazlar.forEach(c => {
+                            let parts = [];
+                            if (c.seri_no) parts.push(`<strong>Seri No:</strong> ${c.seri_no}`);
+                            parts.push(`<strong>Kullanım Adresi:</strong> ${c.adres} <span style="color:#6b7280; font-size:11px;">(${c.ilce} / ${c.il})</span>`);
+
+                            cihazList.innerHTML += `
+                                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:12px; font-size:13px;">
+                                    <div style="font-weight:600; color:var(--primary); margin-bottom:8px; border-bottom:1px solid #e2e8f0; padding-bottom:4px;">Cihaz ${c.index}</div>
+                                    <div style="color:#475569; line-height:1.5;">${parts.join('<br>')}</div>
+                                </div>
+                            `;
+                        });
+                    }
+                } catch (e) {
+                    console.error("Cihaz JSON parse hatasi", e);
+                }
+            }
 
             // Durum update
             const selectEl = document.getElementById('m_durum_select');

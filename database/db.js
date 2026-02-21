@@ -37,6 +37,7 @@ const initializeDatabase = async () => {
         pos_adedi INTEGER NOT NULL,
         pos_tipi TEXT NOT NULL,
         aylik_ciro REAL NOT NULL,
+        cihaz_detaylari TEXT,
         
         durum TEXT NOT NULL DEFAULT 'alindi',
         durum_aciklama TEXT,
