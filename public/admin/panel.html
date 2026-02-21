@@ -1002,10 +1002,13 @@
 
                 let fileUrl = '';
                 if (d.dosya_yolu) {
-                    if (d.dosya_yolu.startsWith('http') || d.dosya_yolu.startsWith('/')) {
+                    const token = localStorage.getItem('adminToken');
+                    if (d.dosya_yolu.startsWith('http')) {
                         fileUrl = d.dosya_yolu;
+                    } else if (d.dosya_yolu.startsWith('/')) {
+                        fileUrl = `${d.dosya_yolu}?token=${token}`;
                     } else {
-                        fileUrl = `/api/admin/dosya/${d.dosya_yolu.split(/[\\/]/).pop()}`;
+                        fileUrl = `/api/admin/dosya/${d.dosya_yolu.split(/[\\/]/).pop()}?token=${token}`;
                     }
 
                     // Cloudinary uzantı eksikliği çözümü: orijinal uzantıyı URL sonuna ekle
