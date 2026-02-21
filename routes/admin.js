@@ -278,8 +278,15 @@ router.get('/stats', authMiddleware, async (req, res) => {
         const toplamRes = await db.query('SELECT COUNT(*) as count FROM applications');
         const durumlarRes = await db.query('SELECT durum, COUNT(*) as count FROM applications GROUP BY durum');
         const bugunRes = await db.query("SELECT COUNT(*) as count FROM applications WHERE basvuru_tarihi >= CURRENT_DATE");
+        const illerRes = await db.query("SELECT DISTINCT il FROM applications WHERE il IS NOT NULL ORDER BY il");
 
-        res.json({ success: true, toplam: parseInt(toplamRes.rows[0].count), bugun: parseInt(bugunRes.rows[0].count), durumlar: durumlarRes.rows.map(d => ({ durum: d.durum, count: parseInt(d.count) })) });
+        res.json({
+            success: true,
+            toplam: parseInt(toplamRes.rows[0].count),
+            bugun: parseInt(bugunRes.rows[0].count),
+            durumlar: durumlarRes.rows.map(d => ({ durum: d.durum, count: parseInt(d.count) })),
+            iller: illerRes.rows.map(r => r.il).filter(i => i.trim() !== '')
+        });
     } catch (err) {
         res.status(500).json({ success: false, message: 'Sunucu hatası' });
     }
