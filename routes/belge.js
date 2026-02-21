@@ -22,7 +22,6 @@ const BELGE_TIPLERI = {
 const cloudinary = require('cloudinary').v2;
 const os = require('os');
 const { v4: uuidv4 } = require('uuid');
-const { Readable } = require('stream');
 require('dotenv').config();
 
 cloudinary.config({
@@ -101,16 +100,11 @@ router.post('/belge-yukle', upload.any(), async (req, res) => {
 
             let secureUrl = '';
             try {
-                const result = await new Promise((resolve, reject) => {
-                    const uploadStream = cloudinary.uploader.upload_stream({
-                        folder: 'pos_guncellemeleri',
-                        resource_type: 'raw',
-                        public_id: pubId
-                    }, (error, res) => {
-                        if (error) reject(error);
-                        else resolve(res);
-                    });
-                    Readable.from(file.buffer).pipe(uploadStream);
+                const base64Data = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+                const result = await cloudinary.uploader.upload(base64Data, {
+                    folder: 'pos_guncellemeleri',
+                    resource_type: 'raw',
+                    public_id: pubId
                 });
                 secureUrl = result.secure_url;
             } catch (upErr) {

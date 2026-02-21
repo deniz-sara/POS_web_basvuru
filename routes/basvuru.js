@@ -11,7 +11,6 @@ const { generateUploadToken } = require('../middleware/auth');
 
 const cloudinary = require('cloudinary').v2;
 const os = require('os');
-const { Readable } = require('stream');
 require('dotenv').config();
 
 cloudinary.config({
@@ -131,16 +130,11 @@ router.post('/basvuru', (req, res) => {
                     const pubId = `${Date.now()}-${uuidv4().slice(0, 8)}-${safe}${ext}`;
 
                     try {
-                        const result = await new Promise((resolve, reject) => {
-                            const uploadStream = cloudinary.uploader.upload_stream({
-                                folder: 'pos_belgeleri',
-                                resource_type: 'raw',
-                                public_id: pubId
-                            }, (error, res) => {
-                                if (error) reject(error);
-                                else resolve(res);
-                            });
-                            Readable.from(f.buffer).pipe(uploadStream);
+                        const base64Data = `data:${f.mimetype};base64,${f.buffer.toString('base64')}`;
+                        const result = await cloudinary.uploader.upload(base64Data, {
+                            folder: 'pos_belgeleri',
+                            resource_type: 'raw',
+                            public_id: pubId
                         });
 
                         yuklenenBelgeler[f.fieldname] = {
