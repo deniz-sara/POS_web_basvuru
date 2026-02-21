@@ -395,6 +395,77 @@
             border: 1px solid var(--border);
             margin-bottom: 20px;
         }
+
+        /* Mobile Responsive for Admin Panel */
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+                height: auto;
+                overflow: auto;
+            }
+
+            .sidebar {
+                width: 100%;
+                flex: none;
+            }
+
+            .sidebar-header {
+                padding: 15px;
+            }
+
+            .nav-menu {
+                display: flex;
+                overflow-x: auto;
+                padding: 10px;
+            }
+
+            .nav-item {
+                white-space: nowrap;
+                border-left: none;
+                border-bottom: 4px solid transparent;
+            }
+
+            .nav-item.active {
+                border-left: none;
+                border-bottom: 4px solid var(--secondary);
+            }
+
+            .main {
+                height: 100vh;
+                /* Allow some scrolling inside main, or set to auto depending on preference */
+                /* But since body is auto, let's just make main let it flow */
+                overflow: visible;
+                display: block;
+            }
+
+            .header {
+                padding: 10px 15px;
+            }
+
+            .content {
+                padding: 15px;
+            }
+
+            .table-container {
+                overflow-x: auto;
+            }
+
+            table {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+
+            .modal-content {
+                width: 95%;
+                margin: 20px auto;
+                padding: 15px;
+            }
+
+            .detail-grid {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 
@@ -517,8 +588,6 @@
                                     id="m_vno"></span></div>
                             <div class="info-group"><span class="info-label">Vergi Dairesi</span><span class="info-val"
                                     id="m_vd"></span></div>
-                            <div class="info-group"><span class="info-label">Sicil No</span><span class="info-val"
-                                    id="m_sicil"></span></div>
                             <div class="info-group"><span class="info-label">Faaliyet Alanı</span><span class="info-val"
                                     id="m_faaliyet"></span></div>
                             <div class="info-group"><span class="info-label">İl / İlçe</span><span class="info-val"
@@ -826,7 +895,6 @@
             document.getElementById('m_firma').innerText = b.firma_unvani;
             document.getElementById('m_vno').innerText = b.vergi_no;
             document.getElementById('m_vd').innerText = b.vergi_dairesi;
-            document.getElementById('m_sicil').innerText = b.ticaret_sicil_no;
             document.getElementById('m_faaliyet').innerText = b.faaliyet_alani;
             document.getElementById('m_il').innerText = `${b.il} / ${b.ilce}`;
             document.getElementById('m_adres').innerText = b.adres;

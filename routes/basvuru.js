@@ -75,14 +75,14 @@ const ZORUNLU_BELGELER = ['ticari_sicil', 'imza_sirkuleri', 'vergi_levhasi', 'ki
 router.post('/basvuru', upload.any(), async (req, res) => {
     try {
         const {
-            firma_unvani, tabela_adi, sirket_tipi, vergi_no, vergi_dairesi, ticaret_sicil_no,
+            firma_unvani, tabela_adi, sirket_tipi, vergi_no, vergi_dairesi,
             faaliyet_alani, adres, il, ilce,
             yetkili_ad_soyad, telefon, email, alt_telefon,
             pos_adedi, pos_tipi, aylik_ciro, ort_islem_tutari
         } = req.body;
 
         // Zorunlu alan validasyonu
-        const zorunlu = { firma_unvani, sirket_tipi, vergi_no, vergi_dairesi, ticaret_sicil_no, faaliyet_alani, adres, il, ilce, yetkili_ad_soyad, telefon, email, pos_adedi, pos_tipi, aylik_ciro, ort_islem_tutari };
+        const zorunlu = { firma_unvani, sirket_tipi, vergi_no, vergi_dairesi, faaliyet_alani, adres, il, ilce, yetkili_ad_soyad, telefon, email, pos_adedi, pos_tipi, aylik_ciro, ort_islem_tutari };
         const eksikAlanlar = Object.entries(zorunlu).filter(([k, v]) => !v).map(([k]) => k);
         if (eksikAlanlar.length > 0) {
             return res.status(400).json({ success: false, message: 'Zorunlu alanlar eksik.', eksik: eksikAlanlar });
@@ -114,7 +114,7 @@ router.post('/basvuru', upload.any(), async (req, res) => {
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
       RETURNING id
     `;
-        const result = await db.query(stmt, [basvuruNo, token, firma_unvani, tabela_adi || '', sirket_tipi, vergi_no, vergi_dairesi, ticaret_sicil_no,
+        const result = await db.query(stmt, [basvuruNo, token, firma_unvani, tabela_adi || '', sirket_tipi, vergi_no, vergi_dairesi, '',
             faaliyet_alani, adres, il, ilce, yetkili_ad_soyad, telefon, email, alt_telefon || null,
             parseInt(pos_adedi), pos_tipi, parseFloat(aylik_ciro), parseFloat(ort_islem_tutari)]);
 
@@ -206,7 +206,7 @@ router.post('/sorgula', async (req, res) => {
     }
 
     try {
-        const appRes = await db.query('SELECT token FROM applications WHERE basvuru_no = $1 AND (vergi_no = $2 OR ticaret_sicil_no = $3)', [basvuru_no.trim(), vergi_no.trim(), vergi_no.trim()]);
+        const appRes = await db.query('SELECT token FROM applications WHERE basvuru_no = $1 AND vergi_no = $2', [basvuru_no.trim(), vergi_no.trim()]);
         const app = appRes.rows[0];
 
         if (!app) {
