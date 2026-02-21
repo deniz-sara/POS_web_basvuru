@@ -1002,7 +1002,7 @@
 
                 let fileUrl = '';
                 if (d.dosya_yolu) {
-                    const token = localStorage.getItem('adminToken');
+                    const token = localStorage.getItem('pos_admin_token');
                     if (d.dosya_yolu.startsWith('http')) {
                         fileUrl = d.dosya_yolu;
                     } else if (d.dosya_yolu.startsWith('/')) {
