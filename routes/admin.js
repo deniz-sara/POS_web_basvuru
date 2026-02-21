@@ -42,6 +42,7 @@ router.post('/login', async (req, res) => {
             return res.status(401).json({ success: false, message: 'Email veya şifre hatalı.' });
         }
 
+        await db.query('UPDATE admin_users SET son_giris_tarihi = CURRENT_TIMESTAMP WHERE id = $1', [user.id]);
         const token = generateToken({ id: user.id, email: user.email, ad_soyad: user.ad_soyad });
         res.json({ success: true, token, admin: { id: user.id, email: user.email, ad_soyad: user.ad_soyad } });
     } catch (err) {
@@ -67,8 +68,8 @@ router.get('/basvurular', authMiddleware, async (req, res) => {
         if (req.query.il) { query += ` AND a.il = $${paramCount++}`; params.push(req.query.il); }
         if (req.query.basvuru_no) { query += ` AND a.basvuru_no ILIKE $${paramCount++}`; params.push(`%${req.query.basvuru_no}%`); }
         if (req.query.firma) { query += ` AND a.firma_unvani ILIKE $${paramCount++}`; params.push(`%${req.query.firma}%`); }
-        if (req.query.tarih_baslangic) { query += ` AND a.basvuru_tarihi >= $${paramCount++}`; params.push(req.query.tarih_baslangic); }
-        if (req.query.tarih_bitis) { query += ` AND a.basvuru_tarihi <= $${paramCount++}`; params.push(req.query.tarih_bitis + ' 23:59:59'); }
+        if (req.query.tarih_baslangic) { query += ` AND a.basvuru_tarihi::date >= $${paramCount++}::date`; params.push(req.query.tarih_baslangic); }
+        if (req.query.tarih_bitis) { query += ` AND a.basvuru_tarihi::date <= $${paramCount++}::date`; params.push(req.query.tarih_bitis); }
 
         query += ' GROUP BY a.id ORDER BY a.basvuru_tarihi DESC';
 
@@ -136,6 +137,9 @@ router.put('/basvuru/:id/durum', authMiddleware, async (req, res) => {
 
         await db.query(`UPDATE applications SET durum = $1, durum_aciklama = $2, guncelleme_tarihi = CURRENT_TIMESTAMP WHERE id = $3`, [durum, aciklama || null, app.id]);
 
+        await db.query(`INSERT INTO admin_logs (admin_id, islem_tipi, basvuru_id, detay) VALUES ($1, $2, $3, $4)`,
+            [req.admin.id, 'Durum Güncelleme', app.id, `Durum '${DURUM_LABELS[durum] || durum}' olarak güncellendi. ${aciklama ? 'Not: ' + aciklama : ''}`]);
+
         // Bildirim gönder
         const emailData = { basvuru_no: app.basvuru_no, token: app.token, yetkili_ad_soyad: app.yetkili_ad_soyad, yeni_durum_label: DURUM_LABELS[durum] || durum, aciklama };
         sendEmail(app.email, 'durumGuncellendi', emailData);
@@ -171,6 +175,8 @@ router.put('/basvuru/:id/eksik-evrak', authMiddleware, async (req, res) => {
 
         // Durum güncelle
         await db.query('UPDATE applications SET durum = $1, durum_aciklama = $2, guncelleme_tarihi = CURRENT_TIMESTAMP WHERE id = $3', ['ek_bilgi', aciklama || null, app.id]);
+        await db.query(`INSERT INTO admin_logs (admin_id, islem_tipi, basvuru_id, detay) VALUES ($1, $2, $3, $4)`,
+            [req.admin.id, 'Eksik Evrak İsteği', app.id, `Eksik belgeler: ${eksik_belgeler.map(b => BELGE_TIPLERI[b] || b).join(', ')}. ${aciklama ? 'Not: ' + aciklama : ''}`]);
 
         // Upload token oluştur
         const uploadToken = generateUploadToken(app.id, eksik_belgeler);
@@ -295,7 +301,7 @@ router.get('/stats', authMiddleware, async (req, res) => {
 // GET /api/admin/users - Tüm yöneticiler
 router.get('/users', authMiddleware, async (req, res) => {
     try {
-        const usersRes = await db.query('SELECT id, email, ad_soyad, aktif, olusturma_tarihi FROM admin_users');
+        const usersRes = await db.query('SELECT id, email, ad_soyad, aktif, olusturma_tarihi, son_giris_tarihi FROM admin_users ORDER BY id');
         res.json({ success: true, data: usersRes.rows });
     } catch (err) {
         res.status(500).json({ success: false, message: 'Sunucu hatası' });
@@ -368,6 +374,44 @@ router.get('/dosya/:filename', authMiddleware, (req, res) => {
     const filePath = path.join(__dirname, '../uploads/pos', req.params.filename);
     if (!fs.existsSync(filePath)) return res.status(404).json({ success: false, message: 'Dosya bulunamadı.' });
     res.sendFile(filePath);
+});
+
+// DELETE /api/admin/basvuru/:id - Başvuruyu kalıcı olarak sil
+router.delete('/basvuru/:id', authMiddleware, async (req, res) => {
+    try {
+        const appRes = await db.query('SELECT * FROM applications WHERE id = $1', [req.params.id]);
+        if (appRes.rows.length === 0) return res.status(404).json({ success: false, message: 'Başvuru bulunamadı.' });
+
+        // İlgili kayıtları sil (Foreign key cascade yoksa manuel silmek gerekebilir ama biz baştan yapalım)
+        await db.query('DELETE FROM documents WHERE application_id = $1', [req.params.id]);
+        await db.query('DELETE FROM application_notes WHERE application_id = $1', [req.params.id]);
+        await db.query('DELETE FROM notifications WHERE application_id = $1', [req.params.id]);
+        await db.query('DELETE FROM applications WHERE id = $1', [req.params.id]);
+
+        await db.query(`INSERT INTO admin_logs (admin_id, islem_tipi, basvuru_id, detay) VALUES ($1, $2, $3, $4)`,
+            [req.admin.id, 'Başvuru Silme', req.params.id, `${appRes.rows[0].basvuru_no} numaralı "${appRes.rows[0].firma_unvani}" firmasına ait başvuru sistemden kalıcı olarak silindi.`]);
+
+        res.json({ success: true, message: 'Başvuru silindi.' });
+    } catch (err) {
+        console.error('Silme hatası:', err);
+        res.status(500).json({ success: false, message: 'Sunucu hatası' });
+    }
+});
+
+// GET /api/admin/logs - Tüm işlemleri listele
+router.get('/logs', authMiddleware, async (req, res) => {
+    try {
+        const logsRes = await db.query(`
+            SELECT l.*, u.ad_soyad as admin_ad, a.basvuru_no 
+            FROM admin_logs l 
+            LEFT JOIN admin_users u ON l.admin_id = u.id 
+            LEFT JOIN applications a ON l.basvuru_id = a.id 
+            ORDER BY l.tarih DESC LIMIT 300
+        `);
+        res.json({ success: true, data: logsRes.rows });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Sunucu hatası' });
+    }
 });
 
 module.exports = router;

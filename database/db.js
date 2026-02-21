@@ -90,13 +90,28 @@ const initializeDatabase = async () => {
         olusturma_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (application_id) REFERENCES applications(id)
       );
+      CREATE TABLE IF NOT EXISTS admin_logs (
+        id SERIAL PRIMARY KEY,
+        admin_id INTEGER,
+        islem_tipi TEXT NOT NULL,
+        basvuru_id INTEGER,
+        detay TEXT,
+        tarih TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (admin_id) REFERENCES admin_users(id),
+        FOREIGN KEY (basvuru_id) REFERENCES applications(id)
+      );
     `);
 
     // Auto-migration for existing databases
     try {
       await pool.query('ALTER TABLE applications ADD COLUMN tc_no TEXT');
-      console.log("Migration: tc_no kotonu eklendi.");
+      console.log("Migration: tc_no kolonu eklendi.");
     } catch (e) { } // Ignores error if column already exists
+
+    try {
+      await pool.query('ALTER TABLE admin_users ADD COLUMN son_giris_tarihi TIMESTAMP');
+      console.log("Migration: son_giris_tarihi kolonu admin_users'a eklendi.");
+    } catch (e) { }
 
     // Auto-migration for existing databases
     try {

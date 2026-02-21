@@ -171,6 +171,11 @@
             border: 1px solid var(--border);
             border-radius: 6px;
             outline: none;
+            height: 38px;
+            box-sizing: border-box;
+            font-family: inherit;
+            font-size: 13px;
+            min-width: 140px;
         }
 
         .btn {
@@ -533,6 +538,7 @@
         <div class="nav-menu">
             <a class="nav-item active" id="nav-basvuru" onclick="showView('basvuru')">Tüm Başvurular</a>
             <a class="nav-item" id="nav-kullanici" onclick="showView('kullanici')">Yöneticiler</a>
+            <a class="nav-item" id="nav-logs" onclick="showView('logs')">İşlem Geçmişi</a>
         </div>
         <div class="sidebar-footer">
             <div id="adminName">Admin User</div>
@@ -624,6 +630,7 @@
                             <tr>
                                 <th>Ad Soyad</th>
                                 <th>Email</th>
+                                <th>Son Giriş</th>
                                 <th>Eklenme Tarihi</th>
                                 <th>Durum</th>
                                 <th>İşlemler</th>
@@ -635,8 +642,33 @@
                     </table>
                 </div>
             </div>
-
         </div>
+
+        <!-- İşlem Logları Görünümü -->
+        <div id="view-logs" style="display: none;">
+            <div class="filters" style="justify-content: space-between; align-items: center;">
+                <div style="font-size: 14px; color: #666;">Sistemdeki önemli yönetici işlemlerinin geçmişi.</div>
+                <button class="btn btn-outline" onclick="loadLogs()">Yenile</button>
+            </div>
+
+            <div class="table-container">
+                <table id="logsTable">
+                    <thead>
+                        <tr>
+                            <th>Tarih</th>
+                            <th>Yönetici</th>
+                            <th>İşlem Tipi</th>
+                            <th>Başvuru No</th>
+                            <th>Detay</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logsTableBody">
+                        <!-- Data inserted here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
     </div>
 
     <!-- Detail Modal -->
@@ -742,6 +774,14 @@
                         <button class="btn btn-outline" style="width:100%" onclick="addNot()">Not Ekle (Sadece Admin
                             Görebilir)</button>
                     </div>
+
+                    <div class="action-box" style="margin-top:20px; border:1px solid var(--error);">
+                        <h4 style="margin-bottom:10px; color:var(--error);">Kalıcı İşlem</h4>
+                        <p style="font-size:12px; color:#666; margin-bottom:15px;">Bu başvuruyu sistemden tamamen
+                            silebilirsiniz. (Geri alınamaz)</p>
+                        <button class="btn" style="width:100%; background:var(--error); color:white"
+                            onclick="deleteBasvuru()">Talebi Sil</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -797,15 +837,24 @@
             if (viewId === 'basvuru') {
                 document.getElementById('view-basvuru').style.display = 'block';
                 document.getElementById('view-kullanici').style.display = 'none';
+                document.getElementById('view-logs').style.display = 'none';
                 document.getElementById('pageTitle').innerText = 'Başvurular';
                 document.getElementById('btnExport').style.display = 'inline-block';
                 loadDashboard();
             } else if (viewId === 'kullanici') {
                 document.getElementById('view-basvuru').style.display = 'none';
                 document.getElementById('view-kullanici').style.display = 'block';
+                document.getElementById('view-logs').style.display = 'none';
                 document.getElementById('pageTitle').innerText = 'Sistem Yöneticileri';
                 document.getElementById('btnExport').style.display = 'none';
                 loadUsers();
+            } else if (viewId === 'logs') {
+                document.getElementById('view-basvuru').style.display = 'none';
+                document.getElementById('view-kullanici').style.display = 'none';
+                document.getElementById('view-logs').style.display = 'block';
+                document.getElementById('pageTitle').innerText = 'İşlem Geçmişi';
+                document.getElementById('btnExport').style.display = 'none';
+                loadLogs();
             }
         }
 
@@ -871,8 +920,10 @@
 
                 document.getElementById('statsGrid').innerHTML = `
                     <div class="stat-card"><div class="title">Toplam Başvuru</div><div class="value">${stats.toplam}</div></div>
-                    <div class="stat-card" style="border-left-color: var(--warning)"><div class="title">Evrak Bekleyen</div><div class="value">${eksikCount}</div></div>
-                    <div class="stat-card" style="border-left-color: var(--secondary)"><div class="title">Onaylanan</div><div class="value">${onayCount}</div></div>
+                    <div class="stat-card" style="border-left-color: var(--secondary)"><div class="title">Henüz İşleme Alınmayan</div><div class="value">${stats.durumlar.find(d => d.durum === 'alingi')?.count || 0}</div></div>
+                    <div class="stat-card" style="border-left-color: var(--warning)"><div class="title">Evrak İnceleme</div><div class="value">${stats.durumlar.find(d => d.durum === 'inceleme')?.count || 0}</div></div>
+                    <div class="stat-card" style="border-left-color: var(--error)"><div class="title">Evrak Bekleyen</div><div class="value">${eksikCount}</div></div>
+                    <div class="stat-card" style="border-left-color: var(--success)"><div class="title">Onaylanan</div><div class="value">${onayCount}</div></div>
                     <div class="stat-card" style="border-left-color: var(--info)"><div class="title">Bugün Gelen</div><div class="value">${stats.bugun}</div></div>
                 `;
             }
@@ -888,10 +939,16 @@
 
             if (data && data.success) {
                 data.data.forEach(u => {
+                    const isOnline = u.son_giris_tarihi && (new Date() - new Date(u.son_giris_tarihi) < 15 * 60 * 1000);
+                    const girisMetni = u.son_giris_tarihi ?
+                        (isOnline ? '<span style="color:var(--success);font-weight:600">🟢 Çevrimiçi</span>' : `🔴 ${new Date(u.son_giris_tarihi).toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}`)
+                        : '<span style="color:#999;font-size:12px">Hiç girmedi</span>';
+
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td style="font-weight:600;">${u.ad_soyad}</td>
                         <td>${u.email}</td>
+                        <td style="font-size:12px;">${girisMetni}</td>
                         <td>${new Date(u.olusturma_tarihi).toLocaleDateString('tr-TR')}</td>
                         <td><span class="badge ${u.aktif ? 'onaylandi' : 'reddedildi'}">${u.aktif ? 'Aktif' : 'Pasif'}</span></td>
                         <td>
@@ -1257,6 +1314,41 @@
             } catch (error) {
                 console.error('Download failed', error);
                 window.open(url, '_blank');
+            }
+        }
+        async function loadLogs() {
+            const data = await apiCall('/logs');
+            const tbody = document.getElementById('logsTableBody');
+            tbody.innerHTML = '';
+
+            if (data && data.success) {
+                data.data.forEach(l => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                    <td style="font-size:12px;color:#555">${new Date(l.tarih).toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
+                    <td style="font-weight:600">${l.admin_ad || '-'}</td>
+                    <td><span class="badge" style="background:#e5e7eb;color:#374151">${l.islem_tipi}</span></td>
+                    <td style="font-weight:600;color:var(--primary)">${l.basvuru_no || '-'}</td>
+                    <td style="font-size:13px;max-width:300px;white-space:normal">${l.detay || '-'}</td>
+                `;
+                    tbody.appendChild(tr);
+                });
+            }
+        }
+
+        async function deleteBasvuru() {
+            if (!currentActiveId) return;
+            if (!confirm('DİKKAT! Bu başvuruya ait olan tüm yüklenen dosyalar, iç notlar ve geçmiş kalıcı olarak SİLİNECEKTİR. Bu işlemi onaylıyor musunuz?')) return;
+
+            const res = await apiCall(`/basvuru/${currentActiveId}`, { method: 'DELETE' });
+
+            if (res.success) {
+                alert('Başvuru kalıcı olarak silindi.');
+                closeModal();
+                loadBasvurular();
+                if (currentView === 'logs') loadLogs();
+            } else {
+                alert(res.message || 'Silme başarısız');
             }
         }
     </script>
