@@ -11,6 +11,7 @@ const { generateUploadToken } = require('../middleware/auth');
 
 const cloudinary = require('cloudinary').v2;
 const os = require('os');
+const { Readable } = require('stream');
 require('dotenv').config();
 
 cloudinary.config({
@@ -130,10 +131,16 @@ router.post('/basvuru', (req, res) => {
                     const pubId = `${Date.now()}-${uuidv4().slice(0, 8)}-${safe}${ext}`;
 
                     try {
-                        const result = await cloudinary.uploader.upload(f.path, {
-                            folder: 'pos_belgeleri',
-                            resource_type: 'raw',
-                            public_id: pubId
+                        const result = await new Promise((resolve, reject) => {
+                            const uploadStream = cloudinary.uploader.upload_stream({
+                                folder: 'pos_belgeleri',
+                                resource_type: 'raw',
+                                public_id: pubId
+                            }, (error, res) => {
+                                if (error) reject(error);
+                                else resolve(res);
+                            });
+                            Readable.from(f.buffer).pipe(uploadStream);
                         });
 
                         yuklenenBelgeler[f.fieldname] = {
@@ -141,11 +148,8 @@ router.post('/basvuru', (req, res) => {
                             originalname: f.originalname,
                             size: f.size
                         };
-
-                        if (fs.existsSync(f.path)) fs.unlinkSync(f.path);
                     } catch (upErr) {
                         console.error("Cloudinary upload hatası:", upErr);
-                        req.files.forEach(file => { if (fs.existsSync(file.path)) fs.unlinkSync(file.path); });
                         return res.status(500).json({ success: false, message: 'Hata detayı: ' + (upErr.message || JSON.stringify(upErr)) });
                     }
                 }
