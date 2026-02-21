@@ -283,7 +283,7 @@ router.get('/stats', authMiddleware, async (req, res) => {
     try {
         const toplamRes = await db.query('SELECT COUNT(*) as count FROM applications');
         const durumlarRes = await db.query('SELECT durum, COUNT(*) as count FROM applications GROUP BY durum');
-        const bugunRes = await db.query("SELECT COUNT(*) as count FROM applications WHERE (basvuru_tarihi AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Istanbul')::date = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Istanbul')::date");
+        const bugunRes = await db.query("SELECT COUNT(*) as count FROM applications WHERE (basvuru_tarihi AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Istanbul')::date = (CURRENT_TIMESTAMP AT TIME ZONE 'Europe/Istanbul')::date");
         const illerRes = await db.query("SELECT DISTINCT il FROM applications WHERE il IS NOT NULL ORDER BY il");
 
         res.json({
