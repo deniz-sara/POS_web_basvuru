@@ -97,7 +97,7 @@ router.post('/belge-yukle', upload.any(), async (req, res) => {
             const belge_tipi = file.fieldname;
             const ext = path.extname(file.originalname);
             const safe = path.basename(file.originalname, ext).replace(/[^a-zA-Z0-9.\-]/g, '_');
-            const pubId = `${Date.now()}-guncelleme-${safe}${ext}`;
+            const pubId = `${Date.now()}-guncelleme-${safe}`;
 
             let secureUrl = '';
             try {

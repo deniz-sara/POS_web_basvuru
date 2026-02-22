@@ -128,7 +128,7 @@ router.post('/basvuru', (req, res) => {
                 for (const f of req.files) {
                     const ext = path.extname(f.originalname);
                     const safe = path.basename(f.originalname, ext).replace(/[^a-zA-Z0-9.\-]/g, '_');
-                    const pubId = `${Date.now()}-${uuidv4().slice(0, 8)}-${safe}${ext}`;
+                    const pubId = `${Date.now()}-${uuidv4().slice(0, 8)}-${safe}`;
 
                     try {
                         if (!f.buffer || f.buffer.length === 0 || f.size === 0) {

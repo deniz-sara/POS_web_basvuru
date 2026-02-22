@@ -1152,13 +1152,7 @@
                         fileUrl = `/api/admin/dosya/${d.dosya_yolu.split(/[\\/]/).pop()}?token=${token}`;
                     }
 
-                    // Cloudinary uzantı eksikliği çözümü: orijinal uzantıyı URL sonuna ekle
-                    if (fileUrl.includes('cloudinary.com') && d.orijinal_ad) {
-                        const ext = d.orijinal_ad.split('.').pop().toLowerCase();
-                        if (!fileUrl.toLowerCase().endsWith('.' + ext)) {
-                            fileUrl += '.' + ext;
-                        }
-                    }
+                    // URL is already fully formed by Cloudinary or local backend
                 }
 
                 docList.innerHTML += `
