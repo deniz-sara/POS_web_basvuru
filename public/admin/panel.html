@@ -1188,13 +1188,19 @@
             document.getElementById('detailModal').style.display = 'flex';
         }
 
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
         function renderNotlar(notlar) {
             const nHtml = notlar.map(n => `
-                        < div style = "border-bottom:1px solid #efefef;padding-bottom:5px;margin-bottom:5px;" >
-                    <strong style="color:var(--primary)">${n.ad_soyad}</strong> <span style="color:#aaa">(${new Date(n.olusturma_tarihi).toLocaleString('tr-TR')})</span><br>
-                    ${n.not_metni}
+                <div style="border-bottom:1px solid #efefef;padding-bottom:5px;margin-bottom:5px;">
+                    <strong style="color:var(--primary)">${escapeHtml(n.ad_soyad || 'Bilinmeyen')}</strong> <span style="color:#aaa">(${new Date(n.olusturma_tarihi).toLocaleString('tr-TR')})</span><br>
+                    ${escapeHtml(n.not_metni || '')}
                 </div>
-                    `).join('');
+            `).join('');
             document.getElementById('m_notlar').innerHTML = nHtml || 'Henüz not yok.';
         }
 
