@@ -34,8 +34,9 @@
                 <div class="form-group required">
                     <label>Vergi / TC Kimlik No</label>
                     <input type="text" id="vergi_no" name="vergi_no" placeholder="Başvuru yaparken girdiğiniz numara"
-                        required oninvalid="this.setCustomValidity('Lütfen vergi veya TC kimlik numaranızı girin.')"
-                        oninput="this.setCustomValidity('')">
+                        required maxlength="11"
+                        oninvalid="this.setCustomValidity('Lütfen vergi veya TC kimlik numaranızı girin.')"
+                        oninput="this.value = this.value.replace(/[^0-9]/g, ''); this.setCustomValidity('')">
                 </div>
 
                 <div class="btn-group">
