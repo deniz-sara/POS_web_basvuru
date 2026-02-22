@@ -272,7 +272,7 @@ router.post('/sorgula', async (req, res) => {
     }
 
     try {
-        const appRes = await db.query('SELECT token FROM applications WHERE basvuru_no = $1 AND vergi_no = $2', [basvuru_no.trim(), vergi_no.trim()]);
+        const appRes = await db.query('SELECT token FROM applications WHERE basvuru_no = $1 AND (vergi_no = $2 OR tc_no = $2)', [basvuru_no.trim(), vergi_no.trim()]);
         const app = appRes.rows[0];
 
         if (!app) {
