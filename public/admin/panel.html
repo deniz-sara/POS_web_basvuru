@@ -1067,6 +1067,15 @@
 
         // ================= Modal Handling =================
 
+        function formatPhone(phone) {
+            if (!phone) return '';
+            const cleaned = phone.replace(/\D/g, '');
+            if (cleaned.length === 11 && cleaned.startsWith('0')) {
+                return cleaned.replace(/(\d{4})(\d{3})(\d{2})(\d{2})/, '$1 $2 $3 $4');
+            }
+            return phone;
+        }
+
         async function openModal(id) {
             currentActiveId = id;
             const data = await apiCall(`/basvuru/${id}`);
@@ -1083,7 +1092,9 @@
             document.getElementById('m_adres').innerText = b.adres;
 
             document.getElementById('m_yetkili').innerText = b.yetkili_ad_soyad;
-            document.getElementById('m_tel').innerText = b.telefon + (b.alt_telefon ? ' / ' + b.alt_telefon : '');
+            const mainPhone = formatPhone(b.telefon);
+            const altPhone = b.alt_telefon ? formatPhone(b.alt_telefon) : '';
+            document.getElementById('m_tel').innerText = mainPhone + (altPhone ? ' / ' + altPhone : '');
             document.getElementById('m_email').innerText = b.email;
             document.getElementById('m_hacim').innerText = `${Number(b.aylik_ciro).toLocaleString('tr-TR')} TL`;
             document.getElementById('m_pos').innerText = `${b.pos_adedi} Adet ${b.pos_tipi}`;
