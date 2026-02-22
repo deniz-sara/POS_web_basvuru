@@ -139,18 +139,17 @@ router.post('/basvuru', (req, res) => {
                         if (ext === '.pdf') {
                             finalUrl = `data:application/pdf;base64,${f.buffer.toString('base64')}`;
                         } else {
-                            const result = await new Promise((resolve, reject) => {
+                            finalUrl = await new Promise((resolve, reject) => {
                                 const uploadStream = cloudinary.uploader.upload_stream({
                                     folder: 'pos_belgeleri',
-                                    resource_type: 'image',
+                                    resource_type: 'auto',
                                     public_id: pubId
                                 }, (error, res) => {
                                     if (error) reject(error);
-                                    else resolve(res);
+                                    else resolve(res.secure_url);
                                 });
                                 streamifier.createReadStream(f.buffer).pipe(uploadStream);
                             });
-                            finalUrl = result.secure_url;
                         }
 
                         yuklenenBelgeler[f.fieldname] = {

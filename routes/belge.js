@@ -108,18 +108,17 @@ router.post('/belge-yukle', upload.any(), async (req, res) => {
                 if (ext === '.pdf') {
                     secureUrl = `data:application/pdf;base64,${file.buffer.toString('base64')}`;
                 } else {
-                    const result = await new Promise((resolve, reject) => {
+                    secureUrl = await new Promise((resolve, reject) => {
                         const uploadStream = cloudinary.uploader.upload_stream({
                             folder: 'pos_guncellemeleri',
-                            resource_type: 'image',
+                            resource_type: 'auto',
                             public_id: pubId
                         }, (error, res) => {
                             if (error) reject(error);
-                            else resolve(res);
+                            else resolve(res.secure_url);
                         });
                         streamifier.createReadStream(file.buffer).pipe(uploadStream);
                     });
-                    secureUrl = result.secure_url;
                 }
             } catch (upErr) {
                 console.error("Cloudinary upload hatası (belge):", upErr);
