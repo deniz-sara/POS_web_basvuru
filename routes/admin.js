@@ -216,7 +216,20 @@ const xlsx = require('xlsx');
 // GET /api/admin/export - XLSX export
 router.get('/export', authMiddleware, async (req, res) => {
     try {
-        const basvurularRes = await db.query('SELECT * FROM applications ORDER BY basvuru_tarihi DESC');
+        let query = `SELECT * FROM applications WHERE 1=1`;
+        const params = [];
+        let paramCount = 1;
+
+        if (req.query.durum) { query += ` AND durum = $${paramCount++}`; params.push(req.query.durum); }
+        if (req.query.il) { query += ` AND il = $${paramCount++}`; params.push(req.query.il); }
+        if (req.query.basvuru_no) { query += ` AND basvuru_no ILIKE $${paramCount++}`; params.push(`%${req.query.basvuru_no}%`); }
+        if (req.query.firma) { query += ` AND firma_unvani ILIKE $${paramCount++}`; params.push(`%${req.query.firma}%`); }
+        if (req.query.tarih_baslangic) { query += ` AND (basvuru_tarihi AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Istanbul')::date >= $${paramCount++}::date`; params.push(req.query.tarih_baslangic); }
+        if (req.query.tarih_bitis) { query += ` AND (basvuru_tarihi AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Istanbul')::date <= $${paramCount++}::date`; params.push(req.query.tarih_bitis); }
+
+        query += ' ORDER BY basvuru_tarihi DESC';
+
+        const basvurularRes = await db.query(query, params);
         const basvurular = basvurularRes.rows;
 
         const durumLabels = {

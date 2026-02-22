@@ -1022,7 +1022,7 @@
             loadBasvurular();
         }
 
-        async function loadBasvurular() {
+        function getFilterParams() {
             const params = new URLSearchParams();
             if (document.getElementById('f_no').value) params.append('basvuru_no', document.getElementById('f_no').value);
             if (document.getElementById('f_firma').value) params.append('firma', document.getElementById('f_firma').value);
@@ -1030,6 +1030,11 @@
             if (document.getElementById('f_tarih_baslangic').value) params.append('tarih_baslangic', document.getElementById('f_tarih_baslangic').value);
             if (document.getElementById('f_tarih_bitis').value) params.append('tarih_bitis', document.getElementById('f_tarih_bitis').value);
             if (document.getElementById('f_il').value) params.append('il', document.getElementById('f_il').value);
+            return params;
+        }
+
+        async function loadBasvurular() {
+            const params = getFilterParams();
 
             const data = await apiCall('/basvurular?' + params.toString());
             const tbody = document.getElementById('tableBody');
@@ -1055,7 +1060,9 @@
         }
 
         async function exportData() {
-            window.open('/api/admin/export?token=' + token, '_blank');
+            const params = getFilterParams();
+            params.append('token', token);
+            window.open('/api/admin/export?' + params.toString(), '_blank');
         }
 
         // ================= Modal Handling =================
