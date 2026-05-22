@@ -707,8 +707,10 @@
                                     id="m_email"></span></div>
                             <div class="info-group"><span class="info-label">Tahmini Ciro</span><span class="info-val"
                                     id="m_hacim"></span></div>
-                            <div class="info-group"><span class="info-label">POS İsteği</span><span class="info-val"
+                            <div class="info-group"><span class="info-label">Başvurulan Ürünler</span><span class="info-val"
                                     id="m_pos"></span></div>
+                            <div class="info-group" id="m_url_group" style="display:none;"><span class="info-label">İnternet Site URL</span><span class="info-val">
+                                    <a href="#" id="m_url" target="_blank" style="color:var(--primary); text-decoration:none;"></a></span></div>
                         </div>
                     </div>
 
@@ -1059,7 +1061,7 @@
                         <td style="font-weight:600;color:var(--primary)">${b.basvuru_no}</td>
                         <td>${b.firma_unvani}</td>
                         <td>${b.il || '-'}</td>
-                        <td>${b.pos_adedi}x ${b.pos_tipi}</td>
+                        <td style="max-width:200px; white-space:normal; font-size:12px;">${b.pos_tipi || '-'}</td>
                         <td><span class="badge ${b.durum}">${DURUM_LABELS[b.durum] || b.durum}</span>
                             ${b.eksik_belge > 0 ? `<br><span style="font-size:11px;color:red">${b.eksik_belge} belge eksik</span>` : ''}
                         </td>
@@ -1107,7 +1109,17 @@
             document.getElementById('m_tel').innerText = mainPhone + (altPhone ? ' / ' + altPhone : '');
             document.getElementById('m_email').innerText = b.email;
             document.getElementById('m_hacim').innerText = `${Number(b.aylik_ciro).toLocaleString('tr-TR')} TL`;
-            document.getElementById('m_pos').innerText = `${b.pos_adedi} Adet ${b.pos_tipi}`;
+            document.getElementById('m_pos').innerText = b.pos_tipi || '-';
+            
+            const urlGroup = document.getElementById('m_url_group');
+            if (b.website_url) {
+                urlGroup.style.display = 'flex';
+                const mUrl = document.getElementById('m_url');
+                mUrl.innerText = b.website_url;
+                mUrl.href = b.website_url.startsWith('http') ? b.website_url : 'https://' + b.website_url;
+            } else {
+                urlGroup.style.display = 'none';
+            }
 
             // Cihaz Detayları parse
             const cihazSection = document.getElementById('m_cihaz_section');

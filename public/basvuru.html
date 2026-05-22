@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>POS Başvurusu | Firma Adı</title>
+    <title>Başvuru Formu | Firma Adı</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
 </head>
@@ -15,7 +15,7 @@
             <div class="form-header">
                 <img src="qnbpay-logo.webp" alt="QNB Logo"
                     style="height: 40px; margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto;">
-                <h1>Fiziki POS Başvurusu</h1>
+                <h1>Başvuru Formu</h1>
                 <p>Başvurunuzu tamamlamak için lütfen aşağıdaki adımları takip edin.</p>
                 <div style="margin-top: 15px;">
                     <a href="sorgula.html" class="btn btn-prev"
@@ -155,32 +155,48 @@
                 <div class="step-content" id="step-3">
                     <div class="form-grid">
                         <div class="form-group full-width">
-                            <label>Cihaz Mülkiyeti <span class="required">*</span></label>
-                            <select name="cihaz_mulkiyeti" id="cihaz_mulkiyeti" required
-                                onchange="renderCihazFormlari()">
-                                <option value="">Seçiniz...</option>
-                                <option value="QNBpay">QNBpay'den Yeni Cihaz Talep Ediyorum</option>
-                                <option value="Kendi Cihazim">Kendi Cihazımı Kullanacağım</option>
-                            </select>
-                            <div id="kendiCihazimUyari"
-                                style="display: none; margin-top: 8px; font-size: 13px; color: var(--error); background: #fef2f2; padding: 10px; border-radius: 6px; border: 1px solid #fecaca;">
-                                <strong>Önemli Uyarı:</strong> Mevcut cihazınızla çalışmak istemeniz durumunda; yalnızca
-                                <strong>Pavo ve Hugin</strong> marka cihazlarla entegrasyonumuz bulunmaktadır.
+                            <label>Başvurulacak Ürünler (Birden fazla seçebilirsiniz) <span class="required">*</span></label>
+                            <div class="checkbox-group" style="margin-top: 5px; display: flex; flex-direction: column; gap: 10px;">
+                                <label style="display:flex; align-items:center; gap:8px;"><input type="checkbox" class="urun_tipi_cb" value="Fiziki POS" onchange="toggleUrunDetaylari()"> Fiziki POS</label>
+                                <label style="display:flex; align-items:center; gap:8px;"><input type="checkbox" class="urun_tipi_cb" value="Sanal POS" onchange="toggleUrunDetaylari()"> Sanal POS</label>
+                                <label style="display:flex; align-items:center; gap:8px;"><input type="checkbox" class="urun_tipi_cb" value="Link POS & Dijital POS" onchange="toggleUrunDetaylari()"> Link POS & Dijital POS</label>
                             </div>
+                            <input type="hidden" name="pos_tipi" id="hidden_pos_tipi" required>
                         </div>
-                        <div class="form-group">
-                            <label>Talep Edilen / Mevcut POS Adedi <span class="required">*</span></label>
-                            <input type="number" name="pos_adedi" id="pos_adedi" required min="1" max="50" value="1"
-                                oninput="renderCihazFormlari()">
+
+                        <div class="form-group full-width" id="sanalPosDetay" style="display: none;">
+                            <label>İnternet Site URL <span class="required">*</span></label>
+                            <input type="url" name="website_url" id="website_url" placeholder="https://www.ornek.com">
                         </div>
-                        <div class="form-group">
-                            <label>POS Tipi <span class="required">*</span></label>
-                            <select name="pos_tipi" required>
-                                <option value="">Seçiniz</option>
-                                <option value="Masaüstü">Masaüstü (Kablolu)</option>
-                                <option value="Mobil">Mobil (Seyyar)</option>
-                                <option value="Yazarkasa">Yazarkasa POS / ÖKC</option>
-                            </select>
+
+                        <div id="fizikiPosDetay" style="display: none; grid-column: 1 / -1; grid-template-columns: 1fr 1fr; gap: 20px;">
+                            <div class="form-group full-width" style="grid-column: 1 / -1;">
+                                <label>Cihaz Mülkiyeti (Fiziki POS) <span class="required">*</span></label>
+                                <select name="cihaz_mulkiyeti" id="cihaz_mulkiyeti" onchange="renderCihazFormlari()">
+                                    <option value="">Seçiniz...</option>
+                                    <option value="QNBpay">QNBpay'den Yeni Cihaz Talep Ediyorum</option>
+                                    <option value="Kendi Cihazim">Kendi Cihazımı Kullanacağım</option>
+                                </select>
+                                <div id="kendiCihazimUyari"
+                                    style="display: none; margin-top: 8px; font-size: 13px; color: var(--error); background: #fef2f2; padding: 10px; border-radius: 6px; border: 1px solid #fecaca;">
+                                    <strong>Önemli Uyarı:</strong> Mevcut cihazınızla çalışmak istemeniz durumunda; yalnızca
+                                    <strong>Pavo ve Hugin</strong> marka cihazlarla entegrasyonumuz bulunmaktadır.
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Talep Edilen / Mevcut POS Adedi <span class="required">*</span></label>
+                                <input type="number" name="pos_adedi" id="pos_adedi" min="1" max="50" value="1"
+                                    oninput="renderCihazFormlari()">
+                            </div>
+                            <div class="form-group">
+                                <label>Cihaz Tipi <span class="required">*</span></label>
+                                <select id="cihaz_tipi" onchange="updateHiddenPosTipi()">
+                                    <option value="">Seçiniz</option>
+                                    <option value="Masaüstü">Masaüstü (Kablolu)</option>
+                                    <option value="Mobil">Mobil (Seyyar)</option>
+                                    <option value="Yazarkasa">Yazarkasa POS / ÖKC</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
 
@@ -259,9 +275,65 @@
         let currentTab = 0;
         let filesData = {};
 
+        function toggleUrunDetaylari() {
+            const checkboxes = document.querySelectorAll('.urun_tipi_cb:checked');
+            const secilenler = Array.from(checkboxes).map(cb => cb.value);
+
+            const sanalDetay = document.getElementById('sanalPosDetay');
+            const websiteUrl = document.getElementById('website_url');
+            if (secilenler.includes('Sanal POS')) {
+                sanalDetay.style.display = 'block';
+                websiteUrl.setAttribute('required', 'required');
+            } else {
+                sanalDetay.style.display = 'none';
+                websiteUrl.removeAttribute('required');
+                websiteUrl.value = '';
+            }
+
+            const fizikiDetay = document.getElementById('fizikiPosDetay');
+            const mulkiyet = document.getElementById('cihaz_mulkiyeti');
+            const cihazTipi = document.getElementById('cihaz_tipi');
+            if (secilenler.includes('Fiziki POS')) {
+                fizikiDetay.style.display = 'grid';
+                mulkiyet.setAttribute('required', 'required');
+                cihazTipi.setAttribute('required', 'required');
+            } else {
+                fizikiDetay.style.display = 'none';
+                mulkiyet.removeAttribute('required');
+                mulkiyet.value = '';
+                cihazTipi.removeAttribute('required');
+                cihazTipi.value = '';
+                document.getElementById('cihazlarContainer').innerHTML = '';
+            }
+
+            updateHiddenPosTipi();
+        }
+
+        function updateHiddenPosTipi() {
+            const checkboxes = document.querySelectorAll('.urun_tipi_cb:checked');
+            let secilenler = Array.from(checkboxes).map(cb => cb.value);
+            
+            if (secilenler.includes('Fiziki POS')) {
+                const cihazTipi = document.getElementById('cihaz_tipi').value;
+                if (cihazTipi) {
+                    secilenler = secilenler.map(s => s === 'Fiziki POS' ? `Fiziki POS (${cihazTipi})` : s);
+                }
+            }
+
+            const hiddenInput = document.getElementById('hidden_pos_tipi');
+            hiddenInput.value = secilenler.join(', ');
+            
+            // Checkbox logic for required validation: if at least one selected, remove required from hidden so it passes native form validation? Actually native form requires hidden input to have a value.
+            if(secilenler.length > 0) {
+                // If native validation complains about hidden input, we might need a dummy checkbox. 
+                // But setting value directly should satisfy 'required'
+            }
+        }
+
         function init() {
             renderFileGrid();
             initSehirler();
+            toggleUrunDetaylari(); // Initialize display state
             showTab(currentTab);
         }
 

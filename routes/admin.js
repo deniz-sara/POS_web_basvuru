@@ -269,6 +269,8 @@ router.get('/export', authMiddleware, async (req, res) => {
                 'Telefon': b.telefon,
                 'Email': b.email,
                 'İl': b.il,
+                'Başvurulan Ürünler': b.pos_tipi || '-',
+                'İnternet Site URL': b.website_url || '-',
                 'POS Adedi': b.pos_adedi,
                 'Cihaz Detayları': cihazlarStr,
                 'Tahmini Ciro': b.aylik_ciro,
