@@ -935,6 +935,7 @@
                 const dbInfo = document.getElementById('dbSizeInfo');
                 if (dbInfo) {
                     dbInfo.innerText = `DB: ${dbRes.size} / ${dbRes.limitMB}MB (%${dbRes.percent})`;
+                    dbInfo.title = `Toplam DB: ${dbRes.size}\nVeri: ${dbRes.dataSize}\nKota: ${dbRes.limitMB} MB\nDoluluk: %${dbRes.percent}`;
                 }
             }
         }

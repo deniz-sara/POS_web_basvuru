@@ -436,17 +436,34 @@ router.get('/logs', authMiddleware, async (req, res) => {
 // GET /api/admin/db-size - Veritabanı boyutunu getir
 router.get('/db-size', authMiddleware, async (req, res) => {
     try {
-        const sizeRes = await db.query('SELECT pg_size_pretty(pg_database_size(current_database())) as size, pg_database_size(current_database()) as bytes');
-        const dbInfo = sizeRes.rows[0];
-        // Neon free tier is usually 500MB (524288000 bytes)
-        const limitBytes = 524288000;
-        const percent = ((parseInt(dbInfo.bytes) / limitBytes) * 100).toFixed(2);
+        // Toplam veritabanı boyutu
+        const sizeRes = await db.query('SELECT pg_database_size(current_database()) as bytes');
+        // Kullanıcı tablolarının gerçek boyutu
+        const tblRes = await db.query(`
+            SELECT COALESCE(sum(pg_total_relation_size(quote_ident(schemaname) || '.' || quote_ident(tablename))), 0)::bigint as tbl_bytes
+            FROM pg_tables WHERE schemaname = 'public'
+        `);
+        const dbBytes = parseInt(sizeRes.rows[0].bytes);
+        const tblBytes = parseInt(tblRes.rows[0].tbl_bytes);
+        // Neon free tier limit: 512 MiB
+        const limitBytes = 536870912;
+        const limitMB = 512;
+        const percent = ((dbBytes / limitBytes) * 100).toFixed(2);
+        // KB hassasiyetinde göster
+        const dbKB = (dbBytes / 1024).toFixed(1);
+        const dbMB = (dbBytes / (1024 * 1024)).toFixed(2);
+        const tblKB = (tblBytes / 1024).toFixed(1);
+        const tblMB = (tblBytes / (1024 * 1024)).toFixed(2);
+        const sizeStr = dbBytes >= 1048576 ? `${dbMB} MB` : `${dbKB} KB`;
+        const tblStr = tblBytes >= 1048576 ? `${tblMB} MB` : `${tblKB} KB`;
         
         res.json({ 
             success: true, 
-            size: dbInfo.size, 
-            bytes: dbInfo.bytes, 
-            limitMB: 500, 
+            size: sizeStr, 
+            dataSize: tblStr,
+            bytes: dbBytes, 
+            dataBytes: tblBytes,
+            limitMB: limitMB, 
             percent: percent 
         });
     } catch (err) {
