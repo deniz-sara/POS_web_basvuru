@@ -239,7 +239,7 @@
             <!-- Status Tracker -->
             <div class="tracker-container">
                 <div class="tracker-grid">
-                    <div class="track-step" id="step-alingi">
+                    <div class="track-step" id="step-alindi">
                         <div class="track-dot"></div>
                         <div class="track-label">Başvuru Alındı</div>
                     </div>
@@ -310,7 +310,7 @@
 
         function updateTracker(durum) {
             const steps = {
-                'alingi': 1,
+                'alindi': 1,
                 'inceleme': 2,
                 'ek_bilgi': 2,
                 'degerlendirme': 3,
@@ -320,7 +320,7 @@
 
             const level = steps[durum] || 1;
 
-            const el1 = document.getElementById('step-alingi');
+            const el1 = document.getElementById('step-alindi');
             const el2 = document.getElementById('step-inceleme');
             const el3 = document.getElementById('step-degerlendirme');
             const el4 = document.getElementById('step-sonuc');

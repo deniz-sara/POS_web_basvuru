@@ -22,7 +22,7 @@ const BELGE_TIPLERI = {
 };
 
 const DURUM_LABELS = {
-    alingi: 'Başvuru Alındı',
+    alindi: 'Başvuru Alındı',
     inceleme: 'Evrak İnceleme',
     degerlendirme: 'Değerlendirme',
     onaylandi: 'Onaylandı',
@@ -233,7 +233,7 @@ router.get('/export', authMiddleware, async (req, res) => {
         const basvurular = basvurularRes.rows;
 
         const durumLabels = {
-            alingi: 'Başvuru Alındı',
+            alindi: 'Başvuru Alındı',
             inceleme: 'Evrak İnceleme',
             degerlendirme: 'Değerlendirme',
             ek_bilgi: 'Evrak Bekleniyor',

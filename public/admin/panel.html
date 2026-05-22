@@ -248,7 +248,7 @@
             font-weight: 500;
         }
 
-        .badge.alingi {
+        .badge.alindi {
             background: #e0e7ff;
             color: #3730a3;
         }
@@ -573,7 +573,7 @@
                         <label>Durum</label>
                         <select id="f_durum">
                             <option value="">Tümü</option>
-                            <option value="alingi">Başvuru Alındı</option>
+                            <option value="alindi">Başvuru Alındı</option>
                             <option value="inceleme">Evrak İnceleme</option>
                             <option value="ek_bilgi">Evrak Bekleniyor</option>
                             <option value="degerlendirme">Değerlendirme</option>
@@ -733,7 +733,7 @@
                         <h4 style="margin-bottom:15px;color:var(--text)">Durum Güncelle</h4>
                         <select id="m_durum_select"
                             style="width:100%;padding:8px;margin-bottom:10px;border-radius:4px;border:1px solid #ccc">
-                            <option value="alingi">Başvuru Alındı</option>
+                            <option value="alindi">Başvuru Alındı</option>
                             <option value="inceleme">Evrak İnceleme</option>
                             <option value="degerlendirme">Değerlendirme</option>
                             <option value="onaylandi">Onaylandı</option>
@@ -857,7 +857,7 @@
         }
 
         const DURUM_LABELS = {
-            alingi: 'Başvuru Alındı',
+            alindi: 'Başvuru Alındı',
             inceleme: 'Evrak İnceleme',
             degerlendirme: 'Değerlendirme',
             ek_bilgi: 'Evrak Bekleniyor',
@@ -918,7 +918,7 @@
 
                 document.getElementById('statsGrid').innerHTML = `
                     <div class="stat-card"><div class="title">Toplam Başvuru</div><div class="value">${stats.toplam}</div></div>
-                    <div class="stat-card" style="border-left-color: var(--secondary)"><div class="title">Henüz İşleme Alınmayan</div><div class="value">${stats.durumlar.find(d => d.durum === 'alingi')?.count || 0}</div></div>
+                    <div class="stat-card" style="border-left-color: var(--secondary)"><div class="title">Henüz İşleme Alınmayan</div><div class="value">${stats.durumlar.find(d => d.durum === 'alindi')?.count || 0}</div></div>
                     <div class="stat-card" style="border-left-color: var(--warning)"><div class="title">Evrak İnceleme</div><div class="value">${stats.durumlar.find(d => d.durum === 'inceleme')?.count || 0}</div></div>
                     <div class="stat-card" style="border-left-color: var(--error)"><div class="title">Evrak Bekleyen</div><div class="value">${eksikCount}</div></div>
                     <div class="stat-card" style="border-left-color: var(--success)"><div class="title">Onaylanan</div><div class="value">${onayCount}</div></div>

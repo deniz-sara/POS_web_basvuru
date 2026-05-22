@@ -238,7 +238,7 @@ router.get('/durum/:token', async (req, res) => {
         }
 
         const durumLabels = {
-            alingi: 'Başvuru Alındı',
+            alindi: 'Başvuru Alındı',
             inceleme: 'Evrak İnceleme',
             degerlendirme: 'Değerlendirme',
             onaylandi: 'Onaylandı',
