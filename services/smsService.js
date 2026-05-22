@@ -45,13 +45,13 @@ async function sendSMS(telefon, mesaj) {
 
 const smsTemplates = {
     basvuruAlindi: (basvuruNo, token) =>
-        `POS basvurunuz alinmistir. Basvuru No: ${basvuruNo}. Sitemizden durumunuzu takip edebilirsiniz.`,
+        `QNBpay urun basvurunuz alinmistir. Basvuru No: ${basvuruNo}. Sitemizden durumunuzu takip edebilirsiniz.`,
 
     eksikEvrak: (basvuruNo, token) =>
-        `POS basvurunuzda (${basvuruNo}) eksik evrak tespit edildi. Lutfen QNBpay uzerinden belgelerinizi guncelleyin.`,
+        `Urun basvurunuzda (${basvuruNo}) eksik evrak tespit edildi. Lutfen QNBpay uzerinden belgelerinizi guncelleyin.`,
 
     durumGuncellendi: (basvuruNo, durum) =>
-        `POS basvurunuz (${basvuruNo}) guncellendi. Yeni durum: ${durum}. Detay icin uygulamaya giriniz.`
+        `Urun basvurunuz (${basvuruNo}) guncellendi. Yeni durum: ${durum}. Detay icin uygulamaya giriniz.`
 };
 
 module.exports = { sendSMS, smsTemplates };
