@@ -457,6 +457,36 @@ router.get('/db-size', authMiddleware, async (req, res) => {
         const sizeStr = dbBytes >= 1048576 ? `${dbMB} MB` : `${dbKB} KB`;
         const tblStr = tblBytes >= 1048576 ? `${tblMB} MB` : `${tblKB} KB`;
         
+        // Cloudinary kullanım bilgisi
+        let cloudInfo = null;
+        const cldName = process.env.CLOUDINARY_CLOUD_NAME;
+        const cldKey = process.env.CLOUDINARY_API_KEY;
+        const cldSecret = process.env.CLOUDINARY_API_SECRET;
+        if (cldName && cldKey && cldSecret) {
+            try {
+                const axios = require('axios');
+                const cldRes = await axios.get(`https://api.cloudinary.com/v1_1/${cldName}/usage`, {
+                    auth: { username: cldKey, password: cldSecret },
+                    timeout: 5000
+                });
+                const u = cldRes.data;
+                const usedBytes = u.storage?.usage || 0;
+                const limitCldBytes = u.storage?.limit || 0;
+                const usedMB = (usedBytes / (1024 * 1024)).toFixed(2);
+                const limitCldMB = (limitCldBytes / (1024 * 1024)).toFixed(0);
+                const cldPercent = limitCldBytes > 0 ? ((usedBytes / limitCldBytes) * 100).toFixed(2) : '0';
+                cloudInfo = {
+                    used: `${usedMB} MB`,
+                    limit: `${limitCldMB} MB`,
+                    percent: cldPercent,
+                    credits_used: u.credits?.usage ? u.credits.usage.toFixed(1) : '0',
+                    credits_limit: u.credits?.limit || 0
+                };
+            } catch (cldErr) {
+                console.error('Cloudinary usage hatası:', cldErr.message);
+            }
+        }
+
         res.json({ 
             success: true, 
             size: sizeStr, 
@@ -464,7 +494,8 @@ router.get('/db-size', authMiddleware, async (req, res) => {
             bytes: dbBytes, 
             dataBytes: tblBytes,
             limitMB: limitMB, 
-            percent: percent 
+            percent: percent,
+            cloudinary: cloudInfo
         });
     } catch (err) {
         res.status(500).json({ success: false, message: 'Sunucu hatası' });

@@ -543,7 +543,7 @@
         <div class="sidebar-footer">
             <div id="adminName">Admin User</div>
             <a class="logout-btn" onclick="logout()">Güvenli Çıkış</a>
-            <div id="dbSizeInfo" style="margin-top: 15px; font-size: 10px; color: rgba(255,255,255,0.3); font-weight: normal; cursor: default;" title="Veritabanı Doluluk Oranı">DB: Yükleniyor...</div>
+            <div id="dbSizeInfo" style="margin-top: 15px; font-size: 10px; color: rgba(255,255,255,0.3); font-weight: normal; cursor: default; line-height: 1.6;" title="Depolama Bilgileri">DB: Yükleniyor...<br>Dosya: Yükleniyor...</div>
         </div>
     </div>
 
@@ -934,8 +934,19 @@
             if (dbRes && dbRes.success) {
                 const dbInfo = document.getElementById('dbSizeInfo');
                 if (dbInfo) {
-                    dbInfo.innerText = `DB: ${dbRes.size} / ${dbRes.limitMB}MB (%${dbRes.percent})`;
-                    dbInfo.title = `Toplam DB: ${dbRes.size}\nVeri: ${dbRes.dataSize}\nKota: ${dbRes.limitMB} MB\nDoluluk: %${dbRes.percent}`;
+                    let html = `DB: ${dbRes.size} / ${dbRes.limitMB}MB (%${dbRes.percent})`;
+                    let tooltip = `Toplam DB: ${dbRes.size}\nVeri: ${dbRes.dataSize}\nKota: ${dbRes.limitMB} MB\nDoluluk: %${dbRes.percent}`;
+                    
+                    if (dbRes.cloudinary) {
+                        const c = dbRes.cloudinary;
+                        html += `<br>Dosya: ${c.used} / ${c.limit} (%${c.percent})`;
+                        tooltip += `\n\nCloudinary Dosya Deposu:\nKullanılan: ${c.used}\nLimit: ${c.limit}\nDoluluk: %${c.percent}`;
+                    } else {
+                        html += `<br>Dosya: Bilgi alınamadı`;
+                    }
+                    
+                    dbInfo.innerHTML = html;
+                    dbInfo.title = tooltip;
                 }
             }
         }
