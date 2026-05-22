@@ -431,4 +431,25 @@ router.get('/logs', authMiddleware, async (req, res) => {
     }
 });
 
+// GET /api/admin/db-size - Veritabanı boyutunu getir
+router.get('/db-size', authMiddleware, async (req, res) => {
+    try {
+        const sizeRes = await db.query('SELECT pg_size_pretty(pg_database_size(current_database())) as size, pg_database_size(current_database()) as bytes');
+        const dbInfo = sizeRes.rows[0];
+        // Neon free tier is usually 500MB (524288000 bytes)
+        const limitBytes = 524288000;
+        const percent = ((parseInt(dbInfo.bytes) / limitBytes) * 100).toFixed(2);
+        
+        res.json({ 
+            success: true, 
+            size: dbInfo.size, 
+            bytes: dbInfo.bytes, 
+            limitMB: 500, 
+            percent: percent 
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Sunucu hatası' });
+    }
+});
+
 module.exports = router;

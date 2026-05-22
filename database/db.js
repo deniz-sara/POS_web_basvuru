@@ -38,6 +38,7 @@ const initializeDatabase = async () => {
         pos_tipi TEXT NOT NULL,
         aylik_ciro REAL NOT NULL,
         cihaz_detaylari TEXT,
+        ort_islem_tutari REAL DEFAULT 0,
         
         durum TEXT NOT NULL DEFAULT 'alindi',
         durum_aciklama TEXT,
@@ -123,6 +124,12 @@ const initializeDatabase = async () => {
     try {
       await pool.query('ALTER TABLE applications ADD COLUMN cihaz_detaylari TEXT');
       console.log("Migration: cihaz_detaylari kolonu eklendi.");
+    } catch (e) { } // Ignores error if column already exists
+
+    // Auto-migration for existing databases: ort_islem_tutari
+    try {
+      await pool.query('ALTER TABLE applications ADD COLUMN ort_islem_tutari REAL DEFAULT 0');
+      console.log("Migration: ort_islem_tutari kolonu eklendi.");
     } catch (e) { } // Ignores error if column already exists
 
     // Default admin eklentisi

@@ -543,6 +543,7 @@
         <div class="sidebar-footer">
             <div id="adminName">Admin User</div>
             <a class="logout-btn" onclick="logout()">Güvenli Çıkış</a>
+            <div id="dbSizeInfo" style="margin-top: 15px; font-size: 10px; color: rgba(255,255,255,0.3); font-weight: normal; cursor: default;" title="Veritabanı Doluluk Oranı">DB: Yükleniyor...</div>
         </div>
     </div>
 
@@ -925,6 +926,15 @@
 
             // Load list
             loadBasvurular();
+            
+            // Load DB size
+            const dbRes = await apiCall('/db-size');
+            if (dbRes && dbRes.success) {
+                const dbInfo = document.getElementById('dbSizeInfo');
+                if (dbInfo) {
+                    dbInfo.innerText = `DB: ${dbRes.size} / ${dbRes.limitMB}MB (%${dbRes.percent})`;
+                }
+            }
         }
 
         async function loadUsers() {
