@@ -26,7 +26,7 @@ const templates = {
         ${headerHtml('Ürün Başvurusu Alındı')}
         <div style="background:#fff;padding:30px;border-radius:0 0 8px 8px">
           <p style="color:#333;font-size:16px">Sayın <strong>${data.yetkili_ad_soyad}</strong>,</p>
-          <p style="color:#555">QNBpay ürün başvurunuz başarıyla alınmıştır. İlgili birimlerimiz en kısa sürede değerlendirmeyi tamamlayacaktır.</p>
+          <p style="color:#555">QNBpay <strong>${data.pos_tipi}</strong> başvurunuz başarıyla alınmıştır. İlgili birimlerimiz en kısa sürede değerlendirmeyi tamamlayacaktır.</p>
           <div style="background:#f4f6f9;padding:20px;border-radius:8px;margin:20px 0;border-left:4px solid ${QNB_COLOR}">
             <p style="margin:5px 0;color:#333"><strong>📋 Başvuru No:</strong> ${data.basvuru_no}</p>
             <p style="margin:5px 0;color:#333"><strong>🏢 Firma:</strong> ${data.firma_unvani}</p>
@@ -126,6 +126,23 @@ const templates = {
           <div style="text-align:center;margin-top:25px">
             <a href="${BASE_URL}/pos/admin/login.html" style="background:${QNB_COLOR};color:#fff;padding:12px 25px;border-radius:5px;text-decoration:none;font-weight:bold;display:inline-block">Admin Panele Git</a>
           </div>
+        </div>
+      </div>
+    `
+  }),
+
+  adminSetPassword: (data) => ({
+    subject: `Yönetici Hesabınız Oluşturuldu - Şifre Belirleyin`,
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8f9fa;padding:20px;border-radius:10px;border:1px solid #ddd">
+        ${headerHtml('Hesabınız Oluşturuldu')}
+        <div style="padding:30px;background:#fff;border-radius:0 0 8px 8px;text-align:center;">
+          <p style="color:#333;font-size:16px;text-align:left;">Sayın <strong>${data.ad_soyad}</strong>,</p>
+          <p style="color:#555;text-align:left;">QNBpay Yönetim Paneli'nde sizin için bir yönetici hesabı oluşturulmuştur. Sisteme giriş yapabilmek için lütfen aşağıdaki butona tıklayarak şifrenizi belirleyiniz.</p>
+          <div style="margin:30px 0;">
+            <a href="${data.reset_link}" style="background:${QNB_COLOR};color:#fff;padding:14px 30px;border-radius:25px;text-decoration:none;font-weight:bold;font-size:15px;display:inline-block">Şifremi Belirle</a>
+          </div>
+          <p style="color:#888;font-size:12px;">Bu bağlantı 24 saat boyunca geçerlidir. Bağlantıya tıklayamıyorsanız şu adresi kopyalayıp tarayıcınıza yapıştırın:<br><br><span style="word-break:break-all;color:${QNB_COLOR};">${data.reset_link}</span></p>
         </div>
       </div>
     `

@@ -92,6 +92,12 @@ router.post('/belge-yukle', upload.any(), async (req, res) => {
         }
 
         const yuklenenAdlar = [];
+        
+        // Önce yüklenen belge tipleri için eksik kayıtları sil (böylece üzerine yazmak yerine hepsini insert edeceğiz)
+        const secilenBelgeTipleri = [...new Set(req.files.map(f => f.fieldname))];
+        for (const tip of secilenBelgeTipleri) {
+            await db.query("DELETE FROM documents WHERE application_id = $1 AND belge_tipi = $2 AND durum = 'eksik'", [app.id, tip]);
+        }
 
         for (const file of req.files) {
             const belge_tipi = file.fieldname;
@@ -125,16 +131,9 @@ router.post('/belge-yukle', upload.any(), async (req, res) => {
                 return res.status(500).json({ success: false, message: 'Hata detayı: ' + (upErr.message || JSON.stringify(upErr)) });
             }
 
-            const existingRes = await db.query('SELECT id FROM documents WHERE application_id = $1 AND belge_tipi = $2', [app.id, belge_tipi]);
-            const existing = existingRes.rows[0];
-
-            if (existing) {
-                await db.query('UPDATE documents SET dosya_yolu = $1, orijinal_ad = $2, boyut = $3, durum = $4, yukleme_tarihi = CURRENT_TIMESTAMP WHERE id = $5',
-                    [secureUrl, file.originalname, file.size, 'yuklendi', existing.id]);
-            } else {
-                await db.query('INSERT INTO documents (application_id, belge_tipi, belge_adi, dosya_yolu, orijinal_ad, boyut, durum) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-                    [app.id, belge_tipi, BELGE_TIPLERI[belge_tipi] || belge_tipi, secureUrl, file.originalname, file.size, 'yuklendi']);
-            }
+            // Her dosyayı yeni bir satır olarak ekle (böylece çoklu dosya desteği çalışır)
+            await db.query('INSERT INTO documents (application_id, belge_tipi, belge_adi, dosya_yolu, orijinal_ad, boyut, durum) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+                [app.id, belge_tipi, BELGE_TIPLERI[belge_tipi] || belge_tipi, secureUrl, file.originalname, file.size, 'yuklendi']);
 
             yuklenenAdlar.push(BELGE_TIPLERI[belge_tipi] || belge_tipi);
         }

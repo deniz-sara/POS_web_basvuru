@@ -128,7 +128,7 @@
                             <span class="file-name" id="name_${b.belge_tipi}" style="margin-top: 5px;">Yüklenmedi</span>
                         </div>
                         <div>
-                            <input type="file" id="file_${b.belge_tipi}" name="${b.belge_tipi}" class="file-input" accept=".pdf,.png,.jpg,.jpeg" onchange="handleFile(this, '${b.belge_tipi}')">
+                            <input type="file" id="file_${b.belge_tipi}" name="${b.belge_tipi}" class="file-input" accept=".pdf,.png,.jpg,.jpeg" onchange="handleFile(this, '${b.belge_tipi}')" multiple>
                             <label for="file_${b.belge_tipi}" class="btn btn-prev" style="padding: 8px 16px;">Seç</label>
                         </div>
                     </div>
@@ -140,17 +140,22 @@
             const card = document.getElementById('card_' + id);
             const nameEl = document.getElementById('name_' + id);
 
-            if (input.files && input.files[0]) {
-                const file = input.files[0];
-                if (file.size > 15 * 1024 * 1024) {
-                    alert('Dosya boyutu 15MB dan büyük olamaz.');
+            if (input.files && input.files.length > 0) {
+                let totalSize = 0;
+                let fileNames = [];
+                for(let i=0; i<input.files.length; i++) {
+                    totalSize += input.files[i].size;
+                    fileNames.push(input.files[i].name);
+                }
+                if (totalSize > 15 * 1024 * 1024) {
+                    alert('Toplam dosya boyutu 15MB dan büyük olamaz.');
                     input.value = '';
                     return;
                 }
                 card.classList.add('has-file');
-                nameEl.innerText = file.name;
+                nameEl.innerText = fileNames.length > 1 ? `${fileNames.length} dosya seçildi` : fileNames[0];
                 nameEl.style.color = 'var(--secondary)';
-                filesData[id] = file;
+                filesData[id] = Array.from(input.files);
             } else {
                 card.classList.remove('has-file');
                 nameEl.innerText = 'Yüklenmedi';
@@ -186,7 +191,11 @@
 
             const data = new FormData();
             Object.keys(filesData).forEach(key => {
-                data.append(key, filesData[key]);
+                if (Array.isArray(filesData[key])) {
+                    filesData[key].forEach(f => data.append(key, f));
+                } else {
+                    data.append(key, filesData[key]);
+                }
             });
 
             try {

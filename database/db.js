@@ -115,6 +115,11 @@ const initializeDatabase = async () => {
       console.log("Migration: son_giris_tarihi kolonu admin_users'a eklendi.");
     } catch (e) { }
 
+    try {
+      await pool.query('ALTER TABLE admin_users ADD COLUMN reset_token TEXT, ADD COLUMN reset_token_expires TIMESTAMP');
+      console.log("Migration: reset_token kolonları admin_users'a eklendi.");
+    } catch (e) { }
+
     // Auto-migration for existing databases
     try {
       await pool.query('ALTER TABLE applications ADD COLUMN vergi_no TEXT');

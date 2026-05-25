@@ -70,6 +70,7 @@ router.get('/basvurular', authMiddleware, async (req, res) => {
         if (req.query.firma) { query += ` AND a.firma_unvani ILIKE $${paramCount++}`; params.push(`%${req.query.firma}%`); }
         if (req.query.tarih_baslangic) { query += ` AND (a.basvuru_tarihi AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Istanbul')::date >= $${paramCount++}::date`; params.push(req.query.tarih_baslangic); }
         if (req.query.tarih_bitis) { query += ` AND (a.basvuru_tarihi AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Istanbul')::date <= $${paramCount++}::date`; params.push(req.query.tarih_bitis); }
+        if (req.query.pos_tipi) { query += ` AND a.pos_tipi ILIKE $${paramCount++}`; params.push(`%${req.query.pos_tipi}%`); }
 
         query += ' GROUP BY a.id ORDER BY a.basvuru_tarihi DESC';
 
@@ -325,20 +326,62 @@ router.get('/users', authMiddleware, async (req, res) => {
 
 // POST /api/admin/user - Yeni yönetici ekle
 router.post('/user', authMiddleware, async (req, res) => {
-    const { email, password, ad_soyad } = req.body;
-    if (!email || !password || !ad_soyad) {
-        return res.status(400).json({ success: false, message: 'Tüm alanlar zorunludur.' });
+    const { email, ad_soyad } = req.body;
+    if (!email || !ad_soyad) {
+        return res.status(400).json({ success: false, message: 'Ad Soyad ve Email alanları zorunludur.' });
     }
 
     try {
-        const hash = bcrypt.hashSync(password, 10);
-        await db.query('INSERT INTO admin_users (email, password_hash, ad_soyad) VALUES ($1, $2, $3)', [email, hash, ad_soyad]);
-        res.json({ success: true, message: 'Kullanıcı başarıyla oluşturuldu.' });
+        // Geçici şifre ataması ve token oluşturma
+        const dummyHash = '*'; // Şifre oluşturulana kadar login olamaması için geçersiz bir hash
+        const crypto = require('crypto');
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        
+        await db.query(`
+            INSERT INTO admin_users (email, password_hash, ad_soyad, reset_token, reset_token_expires) 
+            VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP + INTERVAL '24 hours')
+        `, [email, dummyHash, ad_soyad, resetToken]);
+        
+        // Şifre belirleme mailini gönder
+        const emailData = {
+            ad_soyad: ad_soyad,
+            reset_link: `${process.env.BASE_URL || 'http://localhost:3000'}/admin/set-password.html?token=${resetToken}`
+        };
+        sendEmail(email, 'adminSetPassword', emailData);
+        
+        res.json({ success: true, message: 'Kullanıcı oluşturuldu ve şifre belirleme linki e-posta ile gönderildi.' });
     } catch (err) {
-        if (err.message.includes('unique constraint')) {
+        if (err.message && err.message.includes('unique constraint')) {
             return res.status(400).json({ success: false, message: 'Bu email adresi zaten kullanımda.' });
         }
         res.status(500).json({ success: false, message: 'Kullanıcı eklenirken hata oluştu.' });
+    }
+});
+
+// POST /api/admin/set-password - E-posta ile gelen token üzerinden şifre belirle
+router.post('/set-password', async (req, res) => {
+    const { token, password } = req.body;
+    if (!token || !password) {
+        return res.status(400).json({ success: false, message: 'Token ve yeni şifre gerekli.' });
+    }
+
+    if (password.length < 6) {
+        return res.status(400).json({ success: false, message: 'Şifre en az 6 karakter olmalıdır.' });
+    }
+
+    try {
+        const userRes = await db.query('SELECT id FROM admin_users WHERE reset_token = $1 AND reset_token_expires > CURRENT_TIMESTAMP AND aktif = 1', [token]);
+        const user = userRes.rows[0];
+        if (!user) {
+            return res.status(400).json({ success: false, message: 'Geçersiz veya süresi dolmuş link.' });
+        }
+
+        const hash = bcrypt.hashSync(password, 10);
+        await db.query('UPDATE admin_users SET password_hash = $1, reset_token = NULL, reset_token_expires = NULL WHERE id = $2', [hash, user.id]);
+        res.json({ success: true, message: 'Şifreniz başarıyla belirlendi. Artık giriş yapabilirsiniz.' });
+    } catch (err) {
+        console.error('Şifre belirleme hatası:', err);
+        res.status(500).json({ success: false, message: 'Sunucu hatası.' });
     }
 });
 
@@ -471,7 +514,11 @@ router.get('/db-size', authMiddleware, async (req, res) => {
                 });
                 const u = cldRes.data;
                 const usedBytes = u.storage?.usage || 0;
-                const limitCldBytes = u.storage?.limit || 0;
+                let limitCldBytes = u.storage?.limit || 0;
+                // Cloudinary limit döndürmezse veya 0 ise 25GB varsayımı (Free Tier)
+                if (!limitCldBytes || limitCldBytes === 0) {
+                    limitCldBytes = 25 * 1024 * 1024 * 1024; 
+                }
                 const usedMB = (usedBytes / (1024 * 1024)).toFixed(2);
                 const limitCldMB = (limitCldBytes / (1024 * 1024)).toFixed(0);
                 const cldPercent = limitCldBytes > 0 ? ((usedBytes / limitCldBytes) * 100).toFixed(2) : '0';

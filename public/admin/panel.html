@@ -582,6 +582,15 @@
                         </select>
                     </div>
                     <div class="form-group">
+                        <label>Başvurulan Ürünler</label>
+                        <select id="f_urun">
+                            <option value="">Tümü</option>
+                            <option value="Sanal POS">Sanal POS</option>
+                            <option value="Link & Dijital POS">Link & Dijital POS</option>
+                            <option value="Fiziki POS">Fiziki POS</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
                         <label>Tarih Başlangıç</label>
                         <input type="date" id="f_tarih_baslangic">
                     </div>
@@ -607,7 +616,7 @@
                                 <th>Başvuru No</th>
                                 <th>Firma Unvanı</th>
                                 <th>İl</th>
-                                <th>Talep</th>
+                                <th>Başvurulan Ürünler</th>
                                 <th>Durum</th>
                             </tr>
                         </thead>
@@ -707,10 +716,10 @@
                                     id="m_email"></span></div>
                             <div class="info-group"><span class="info-label">Tahmini Ciro</span><span class="info-val"
                                     id="m_hacim"></span></div>
-                            <div class="info-group"><span class="info-label">Başvurulan Ürünler</span><span class="info-val"
-                                    id="m_pos"></span></div>
-                            <div class="info-group" id="m_url_group" style="display:none;"><span class="info-label">İnternet Site URL</span><span class="info-val">
-                                    <a href="#" id="m_url" target="_blank" style="color:var(--primary); text-decoration:none;"></a></span></div>
+                            <div class="info-group" style="grid-column: 1/-1; margin-top: 5px;"><span class="info-label">Başvurulan Ürünler</span><span class="info-val"
+                                    id="m_pos" style="display:block; line-height:1.4;"></span></div>
+                            <div class="info-group" id="m_url_group" style="display:none; grid-column: 1/-1;"><span class="info-label">İnternet Site URL</span><span class="info-val">
+                                    <a href="#" id="m_url" target="_blank" style="color:var(--primary); text-decoration:none; word-break:break-all;"></a></span></div>
                         </div>
                     </div>
 
@@ -802,10 +811,12 @@
                     <label>Email Adresi</label>
                     <input type="email" id="u_email" placeholder="Örn: ahmet@sirket.com">
                 </div>
-                <div class="form-group">
-                    <label>Şifre <span id="u_pass_hint"
-                            style="font-size:11px; font-weight:normal; color:#666;"></span></label>
-                    <input type="password" id="u_pass" placeholder="Geçici şifre belirleyin">
+                <div class="form-group" id="u_pass_container" style="display:none;">
+                    <label>Şifre</label>
+                    <input type="password" id="u_pass" placeholder="Yeni şifre">
+                </div>
+                <div id="u_pass_info" style="font-size:12px; color:#666; background:#f4f6f9; padding:10px; border-radius:6px; margin-bottom:5px;">
+                    <span style="color:var(--primary)">ℹ</span> Kullanıcıya şifre oluşturma linki e-posta ile gönderilecektir.
                 </div>
                 <button class="btn btn-primary" id="u_modal_btn" style="width: 100%; margin-top: 10px;"
                     onclick="saveUser()">Yöneticiyi Ekle</button>
@@ -987,7 +998,14 @@
 
             document.getElementById('u_modal_title').innerText = id ? 'Yönetici Düzenle' : 'Yeni Yönetici Ekle';
             document.getElementById('u_modal_btn').innerText = id ? 'Değişiklikleri Kaydet' : 'Yönetici Ekle';
-            document.getElementById('u_pass_hint').innerText = id ? '(Değiştirmeyecekseniz boş bırakın)' : '';
+            
+            if (id) {
+                document.getElementById('u_pass_container').style.display = 'block';
+                document.getElementById('u_pass_info').style.display = 'none';
+            } else {
+                document.getElementById('u_pass_container').style.display = 'none';
+                document.getElementById('u_pass_info').style.display = 'block';
+            }
 
             document.getElementById('userModal').style.display = 'flex';
         }
@@ -1002,7 +1020,7 @@
             const password = document.getElementById('u_pass').value;
             const ad_soyad = document.getElementById('u_ad').value;
 
-            if (!email || !ad_soyad || (!id && !password)) return alert('Lütfen zorunlu alanları doldurun.');
+            if (!email || !ad_soyad) return alert('Lütfen zorunlu alanları doldurun.');
 
             const endpoint = id ? `/user/${id}` : '/user';
             const method = id ? 'PUT' : 'POST';
@@ -1043,6 +1061,7 @@
             document.getElementById('f_tarih_baslangic').value = '';
             document.getElementById('f_tarih_bitis').value = '';
             document.getElementById('f_il').value = '';
+            document.getElementById('f_urun').value = '';
             loadBasvurular();
         }
 
@@ -1054,6 +1073,7 @@
             if (document.getElementById('f_tarih_baslangic').value) params.append('tarih_baslangic', document.getElementById('f_tarih_baslangic').value);
             if (document.getElementById('f_tarih_bitis').value) params.append('tarih_bitis', document.getElementById('f_tarih_bitis').value);
             if (document.getElementById('f_il').value) params.append('il', document.getElementById('f_il').value);
+            if (document.getElementById('f_urun').value) params.append('pos_tipi', document.getElementById('f_urun').value);
             return params;
         }
 

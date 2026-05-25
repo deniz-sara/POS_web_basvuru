@@ -166,7 +166,8 @@
 
                         <div class="form-group full-width" id="sanalPosDetay" style="display: none;">
                             <label>İnternet Site URL <span class="required">*</span></label>
-                            <input type="url" name="website_url" id="website_url" placeholder="https://www.ornek.com">
+                            <input type="text" name="website_url" id="website_url" placeholder="www.ornek.com" oninput="this.value = this.value.replace(/^https?:\\/\\//i, '')">
+                            <span style="font-size: 12px; color: #666; margin-top: 4px; display: block;">Lütfen başında https:// olmadan sadece site adresinizi (örn: www.siteniz.com) giriniz.</span>
                         </div>
 
                         <div id="fizikiPosDetay" style="display: none; grid-column: 1 / -1; grid-template-columns: 1fr 1fr; gap: 20px;">
@@ -558,7 +559,7 @@
                     <div class="file-card" id="card_${b.id}">
                         <h4>${b.mask} ${reqHTML}</h4>
                         <div class="desc">${b.desc}</div>
-                        <input type="file" id="file_${b.id}" name="${b.id}" class="file-input" accept=".pdf,.png,.jpg,.jpeg" onchange="handleFile(this, '${b.id}')" ${b.required ? 'required' : ''}>
+                        <input type="file" id="file_${b.id}" name="${b.id}" class="file-input" accept=".pdf,.png,.jpg,.jpeg" onchange="handleFile(this, '${b.id}')" ${b.required ? 'required' : ''} multiple>
                         <label for="file_${b.id}" class="file-btn">Dosya Seç</label>
                         <span class="file-name" id="name_${b.id}">Yüklenmedi</span>
                     </div>
@@ -570,17 +571,22 @@
             const card = document.getElementById('card_' + id);
             const nameEl = document.getElementById('name_' + id);
 
-            if (input.files && input.files[0]) {
-                const file = input.files[0];
-                if (file.size > 15 * 1024 * 1024) {
-                    alert('Dosya boyutu 15MB dan büyük olamaz.');
+            if (input.files && input.files.length > 0) {
+                let totalSize = 0;
+                let fileNames = [];
+                for(let i=0; i<input.files.length; i++) {
+                    totalSize += input.files[i].size;
+                    fileNames.push(input.files[i].name);
+                }
+                if (totalSize > 15 * 1024 * 1024) {
+                    alert('Toplam dosya boyutu 15MB dan büyük olamaz.');
                     input.value = '';
                     return;
                 }
                 card.classList.add('has-file');
-                nameEl.innerText = file.name;
+                nameEl.innerText = fileNames.length > 1 ? `${fileNames.length} dosya seçildi` : fileNames[0];
                 nameEl.style.color = 'var(--secondary)';
-                filesData[id] = file;
+                filesData[id] = Array.from(input.files);
             } else {
                 card.classList.remove('has-file');
                 nameEl.innerText = 'Yüklenmedi';
@@ -701,7 +707,13 @@
             // Clean up files we track manually just in case
             belgeler.forEach(b => {
                 data.delete(b.id);
-                if (filesData[b.id]) data.append(b.id, filesData[b.id]);
+                if (filesData[b.id]) {
+                    if (Array.isArray(filesData[b.id])) {
+                        filesData[b.id].forEach(f => data.append(b.id, f));
+                    } else {
+                        data.append(b.id, filesData[b.id]);
+                    }
+                }
             });
 
             // --- Collect Dynamic Device Details ---
