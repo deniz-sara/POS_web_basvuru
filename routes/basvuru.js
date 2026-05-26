@@ -130,7 +130,7 @@ router.post('/basvuru', (req, res) => {
             }
 
             // Cloudinary'ye paralel yükle
-            const yuklenenBelgeler = {};
+            const yuklenenBelgeler = [];
             if (req.files && req.files.length > 0) {
                 try {
                     const uploadPromises = req.files.map(async (f) => {
@@ -168,13 +168,7 @@ router.post('/basvuru', (req, res) => {
                     });
 
                     const uploadResults = await Promise.all(uploadPromises);
-                    uploadResults.forEach(item => {
-                        yuklenenBelgeler[item.fieldname] = {
-                            path: item.path,
-                            originalname: item.originalname,
-                            size: item.size
-                        };
-                    });
+                    yuklenenBelgeler.push(...uploadResults);
                 } catch (upErr) {
                     console.error("Cloudinary upload hatası:", upErr);
                     return res.status(500).json({ success: false, message: 'Dosya yükleme hatası: ' + (upErr.message || JSON.stringify(upErr)) });
@@ -203,8 +197,8 @@ router.post('/basvuru', (req, res) => {
       INSERT INTO documents (application_id, belge_tipi, belge_adi, dosya_yolu, orijinal_ad, boyut, zorunlu)
       VALUES ($1, $2, $3, $4, $5, $6, $7)
     `;
-            for (const [tip, file] of Object.entries(yuklenenBelgeler)) {
-                await db.query(docStmt, [applicationId, tip, BELGE_TIPLERI[tip] || tip, file.path, file.originalname, file.size, ZORUNLU_BELGELER.includes(tip) ? 1 : 0]);
+            for (const file of yuklenenBelgeler) {
+                await db.query(docStmt, [applicationId, file.fieldname, BELGE_TIPLERI[file.fieldname] || file.fieldname, file.path, file.originalname, file.size, ZORUNLU_BELGELER.includes(file.fieldname) ? 1 : 0]);
             }
 
             // Email & SMS gönder (async, hatalar ana akışı bozmasın diye try-catch içinde)

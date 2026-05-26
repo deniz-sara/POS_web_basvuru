@@ -1233,6 +1233,7 @@
                     <li class="doc-item ${d.durum === 'eksik' ? 'eksik' : ''}">
                         <div>
                             <span style="font-size:14px;font-weight:500">${d.belge_adi}</span>
+                            ${d.orijinal_ad ? `<span style="font-size:12px;color:#6b7280;margin-left:8px;">(${d.orijinal_ad})</span>` : ''}
                             <div style="font-size:11px;color:#888">${d.durum === 'eksik' ? 'Eksik İşaretlendi' : new Date(d.yukleme_tarihi).toLocaleString()}</div>
                         </div>
                         ${fileUrl ? `
