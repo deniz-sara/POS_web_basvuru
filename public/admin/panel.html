@@ -1246,36 +1246,29 @@
 
             // Belgeleri kategori bazlı render et
             Object.entries(groupedDocs).forEach(([type, group]) => {
-                let filesHtml = '';
-                if (group.files.length > 0) {
-                    filesHtml = `
-                        <div style="margin-top: 8px; display: flex; flex-direction: column; gap: 6px; padding-left: 10px; border-left: 2px solid var(--primary);">
-                            ${group.files.map((file, idx) => `
-                                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; background: #f8fafc; padding: 6px 10px; border-radius: 4px; border: 1px dashed #e2e8f0;">
-                                    <span style="color: #475569; font-weight: 500; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; max-width: 250px;" title="${file.orijinal_ad}">
-                                        ${idx + 1}. ${file.orijinal_ad}
-                                    </span>
-                                    <div style="display: flex; gap: 8px;">
-                                        <a href="#" onclick="forceDownload('${file.url}', '${file.orijinal_ad}', event)" class="doc-link" style="color: var(--primary); font-weight: 600; text-decoration: underline; font-size: 11px;">İndir</a>
-                                        <button onclick="openPreview('${file.url}', '${group.belge_adi} - ${idx + 1}')" class="doc-link" style="background: var(--secondary); color: #fff; border: none; padding: 2px 6px; border-radius: 4px; font-size: 10px; cursor: pointer;">Önizle</button>
-                                    </div>
-                                </div>
-                            `).join('')}
+                let actionHtml = '';
+                let fileCount = group.files.length;
+                if (fileCount > 0) {
+                    const filesKey = `doc_files_${type}`;
+                    window[filesKey] = group.files;
+                    
+                    actionHtml = `
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <a href="#" onclick="downloadCategoryFiles(window['${filesKey}'], event)" class="doc-link" style="color:var(--primary); font-weight:600; text-decoration:underline;">İndir (${fileCount})</a>
+                            <button onclick="openPreviewMultiple(window['${filesKey}'], '${group.belge_adi}')" class="doc-link" style="background:var(--secondary); color:#fff; border:none; padding:4px 10px; border-radius:4px; font-size:12px; cursor:pointer;">Önizle (${fileCount})</button>
                         </div>
                     `;
                 } else {
-                    filesHtml = '<span style="color: red; font-size: 12px; margin-top: 4px; display: block;">Bekleniyor</span>';
+                    actionHtml = '<span style="color:red;font-size:12px">Bekleniyor</span>';
                 }
 
                 docList.innerHTML += `
-                    <li class="doc-item ${group.durum === 'eksik' ? 'eksik' : ''}" style="flex-direction: column; align-items: stretch; gap: 5px; padding: 12px; margin-bottom: 10px; border: 1px solid var(--border); border-radius: 6px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span style="font-size: 14px; font-weight: 600; color: #1e293b;">${group.belge_adi}</span>
-                            <span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; font-weight: 500; background: ${group.durum === 'eksik' ? '#fee2e2' : '#d1fae5'}; color: ${group.durum === 'eksik' ? '#991b1b' : '#065f46'};">
-                                ${group.durum === 'eksik' ? 'Eksik' : 'Yüklendi'}
-                            </span>
+                    <li class="doc-item ${group.durum === 'eksik' ? 'eksik' : ''}">
+                        <div>
+                            <span style="font-size:14px;font-weight:500">${group.belge_adi}</span>
+                            <div style="font-size:11px;color:#888">${group.durum === 'eksik' ? 'Eksik İşaretlendi' : 'Yüklendi (' + fileCount + ' Dosya)'}</div>
                         </div>
-                        ${filesHtml}
+                        ${actionHtml}
                     </li>
                 `;
             });
@@ -1383,6 +1376,10 @@
         function openPreview(url, title) {
             document.getElementById('previewTitle').innerText = title;
             const contentDiv = document.getElementById('previewContent');
+            contentDiv.style.display = 'flex';
+            contentDiv.style.alignItems = 'center';
+            contentDiv.style.justifyContent = 'center';
+            contentDiv.style.padding = '0';
 
             // Eğer PDF ise veya veritabanından çekilen gizli PDF verisi ise iframe ile göster
             if (url.toLowerCase().includes('.pdf') || url.includes('/api/admin/dosya-indir')) {
@@ -1394,9 +1391,81 @@
             document.getElementById('previewOverlay').style.display = 'flex';
         }
 
+        function openPreviewMultiple(files, title) {
+            document.getElementById('previewTitle').innerText = title;
+            const contentDiv = document.getElementById('previewContent');
+            
+            // Ayarları liste/scrollable layout için ayarla
+            contentDiv.style.display = 'block';
+            contentDiv.style.padding = '20px';
+            contentDiv.style.background = '#f1f5f9';
+            contentDiv.innerHTML = '';
+
+            files.forEach((file, idx) => {
+                const card = document.createElement('div');
+                card.style.background = '#fff';
+                card.style.borderRadius = '8px';
+                card.style.boxShadow = '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)';
+                card.style.marginBottom = '20px';
+                card.style.padding = '15px';
+                
+                const cardTitle = document.createElement('div');
+                cardTitle.style.fontWeight = '600';
+                cardTitle.style.fontSize = '14px';
+                cardTitle.style.marginBottom = '10px';
+                cardTitle.style.color = 'var(--primary)';
+                cardTitle.innerText = `${idx + 1}. ${file.orijinal_ad}`;
+                card.appendChild(cardTitle);
+
+                const url = file.url;
+                if (url.toLowerCase().includes('.pdf') || url.includes('/api/admin/dosya-indir')) {
+                    const iframe = document.createElement('iframe');
+                    iframe.src = url;
+                    iframe.style.width = '100%';
+                    iframe.style.height = '600px';
+                    iframe.style.border = '1px solid #e2e8f0';
+                    iframe.style.borderRadius = '6px';
+                    card.appendChild(iframe);
+                } else {
+                    const img = document.createElement('img');
+                    img.src = url;
+                    img.alt = file.orijinal_ad;
+                    img.style.maxWidth = '100%';
+                    img.style.maxHeight = '700px';
+                    img.style.display = 'block';
+                    img.style.margin = '0 auto';
+                    img.style.borderRadius = '6px';
+                    img.style.border = '1px solid #e2e8f0';
+                    card.appendChild(img);
+                }
+                contentDiv.appendChild(card);
+            });
+
+            document.getElementById('previewOverlay').style.display = 'flex';
+        }
+
         function closePreview() {
             document.getElementById('previewOverlay').style.display = 'none';
-            document.getElementById('previewContent').innerHTML = '';
+            const contentDiv = document.getElementById('previewContent');
+            contentDiv.innerHTML = '';
+            contentDiv.removeAttribute('style'); // CSS varsayılanlarına sıfırla
+        }
+
+        async function downloadCategoryFiles(files, event) {
+            if (event) event.preventDefault();
+            const btn = event ? event.target : null;
+            const oldText = btn ? btn.innerText : '';
+            if (btn) btn.innerText = 'İndiriliyor...';
+
+            for (const file of files) {
+                try {
+                    await forceDownload(file.url, file.orijinal_ad);
+                } catch (e) {
+                    console.error('Download failed for file:', file, e);
+                }
+            }
+
+            if (btn) btn.innerText = oldText;
         }
 
         async function forceDownload(url, filename, event) {
