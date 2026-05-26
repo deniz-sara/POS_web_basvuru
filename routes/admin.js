@@ -24,7 +24,7 @@ const BELGE_TIPLERI = {
 const DURUM_LABELS = {
     alindi: 'Başvuru Alındı',
     inceleme: 'Evrak İnceleme',
-    degerlendirme: 'Değerlendirme',
+    degerlendirme: 'Değerlendirmede',
     onaylandi: 'Onaylandı',
     reddedildi: 'Reddedildi',
     ek_bilgi: 'Ek Bilgi / Evrak Bekleniyor'

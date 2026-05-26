@@ -20,10 +20,10 @@ const headerHtml = (title) => `
 // Email şablonları
 const templates = {
   basvuruAlindiMusteri: (data) => ({
-    subject: `Ürün Başvurunuz Alındı - Başvuru No: ${data.basvuru_no}`,
+    subject: `Başvurunuz Alındı - Başvuru No: ${data.basvuru_no}`,
     html: `
       <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8f9fa;padding:20px;border-radius:10px;border:1px solid #ddd">
-        ${headerHtml('Ürün Başvurusu Alındı')}
+        ${headerHtml('Başvurunuz Alındı')}
         <div style="background:#fff;padding:30px;border-radius:0 0 8px 8px">
           <p style="color:#333;font-size:16px">Sayın <strong>${data.yetkili_ad_soyad}</strong>,</p>
           <p style="color:#555">QNBpay <strong>${data.pos_tipi}</strong> başvurunuz başarıyla alınmıştır. İlgili birimlerimiz en kısa sürede değerlendirmeyi tamamlayacaktır.</p>
@@ -48,7 +48,7 @@ const templates = {
     subject: `[YENİ BAŞVURU] ${data.firma_unvani} - ${data.basvuru_no}`,
     html: `
       <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8f9fa;padding:20px;border-radius:10px;border:1px solid #ddd">
-        ${headerHtml('Yeni Ürün Başvurusu')}
+        ${headerHtml('Yeni Başvuru')}
         <div style="padding:30px;background:#fff;border-radius:0 0 8px 8px">
           <table style="width:100%;border-collapse:collapse">
             <tr><td style="padding:10px;border-bottom:1px solid #eee;color:#666">Başvuru No</td><td style="padding:10px;border-bottom:1px solid #eee;font-weight:bold">${data.basvuru_no}</td></tr>
@@ -68,7 +68,7 @@ const templates = {
   }),
 
   eksikEvrak: (data) => ({
-    subject: `[EVRAK EKSİK] Ürün Başvurunuz - ${data.basvuru_no}`,
+    subject: `[EVRAK EKSİK] Başvurunuz - ${data.basvuru_no}`,
     html: `
       <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8f9fa;padding:20px;border-radius:10px;border:1px solid #ddd">
         ${headerHtml('Eksik Evrak Bildirimi')}
@@ -92,7 +92,7 @@ const templates = {
   }),
 
   durumGuncellendi: (data) => ({
-    subject: `Ürün Başvurunuz Güncellendi - ${data.basvuru_no}`,
+    subject: `Başvurunuz Güncellendi - ${data.basvuru_no}`,
     html: `
       <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8f9fa;padding:20px;border-radius:10px;border:1px solid #ddd">
         ${headerHtml('Başvuru Durumu Güncellendi')}
