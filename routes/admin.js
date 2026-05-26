@@ -343,9 +343,10 @@ router.post('/user', authMiddleware, async (req, res) => {
         `, [email, dummyHash, ad_soyad, resetToken]);
         
         // Şifre belirleme mailini gönder
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
         const emailData = {
             ad_soyad: ad_soyad,
-            reset_link: `${process.env.BASE_URL || 'http://localhost:3000'}/admin/set-password.html?token=${resetToken}`
+            reset_link: `${baseUrl}/admin/set-password.html?token=${resetToken}`
         };
         sendEmail(email, 'adminSetPassword', emailData);
         

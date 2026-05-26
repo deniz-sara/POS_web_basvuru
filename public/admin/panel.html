@@ -717,9 +717,13 @@
                             <div class="info-group"><span class="info-label">Tahmini Ciro</span><span class="info-val"
                                     id="m_hacim"></span></div>
                             <div class="info-group" style="grid-column: 1/-1; margin-top: 5px;"><span class="info-label">Başvurulan Ürünler</span><span class="info-val"
-                                    id="m_pos" style="display:block; line-height:1.4;"></span></div>
-                            <div class="info-group" id="m_url_group" style="display:none; grid-column: 1/-1;"><span class="info-label">İnternet Site URL</span><span class="info-val">
-                                    <a href="#" id="m_url" target="_blank" style="color:var(--primary); text-decoration:none; word-break:break-all;"></a></span></div>
+                                    id="m_pos" style="display:block; line-height:1.4; font-weight: 500; color: var(--primary);"></span></div>
+                            <div class="info-group" id="m_url_group" style="display:none; grid-column: 1/-1; align-items: center; gap: 8px; margin-bottom: 15px;">
+                                <span class="info-label" style="margin-bottom: 0; display: inline-block;">İnternet Site URL:</span>
+                                <span class="info-val" style="display: inline-block;">
+                                    <a href="#" id="m_url" target="_blank" style="color:var(--primary); text-decoration:none; word-break:break-all;"></a>
+                                </span>
+                            </div>
                         </div>
                     </div>
 
@@ -1141,7 +1145,12 @@
             document.getElementById('m_tel').innerText = mainPhone + (altPhone ? ' / ' + altPhone : '');
             document.getElementById('m_email').innerText = b.email;
             document.getElementById('m_hacim').innerText = `${Number(b.aylik_ciro).toLocaleString('tr-TR')} TL`;
-            document.getElementById('m_pos').innerText = b.pos_tipi || '-';
+            if (b.pos_tipi) {
+                const urunler = b.pos_tipi.split(',').map(u => u.trim()).filter(Boolean);
+                document.getElementById('m_pos').innerHTML = urunler.map(urun => `<div style="margin-bottom: 4px; font-weight: 500; color: #1e293b;">• ${urun}</div>`).join('');
+            } else {
+                document.getElementById('m_pos').innerText = '-';
+            }
             
             const urlGroup = document.getElementById('m_url_group');
             if (b.website_url) {

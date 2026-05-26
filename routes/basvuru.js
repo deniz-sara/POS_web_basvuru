@@ -129,17 +129,17 @@ router.post('/basvuru', (req, res) => {
                 });
             }
 
-            // Cloudinary'ye manuel yükle (Kesin olarak resource_type: 'raw' olmak zorunda)
+            // Cloudinary'ye paralel yükle
             const yuklenenBelgeler = {};
-            if (req.files) {
-                for (const f of req.files) {
-                    const ext = path.extname(f.originalname);
-                    const safe = path.basename(f.originalname, ext).replace(/[^a-zA-Z0-9.\-]/g, '_');
-                    const pubId = `${Date.now()}-${uuidv4().slice(0, 8)}-${safe}`;
+            if (req.files && req.files.length > 0) {
+                try {
+                    const uploadPromises = req.files.map(async (f) => {
+                        const ext = path.extname(f.originalname).toLowerCase();
+                        const safe = path.basename(f.originalname, ext).replace(/[^a-zA-Z0-9.\-]/g, '_');
+                        const pubId = `${Date.now()}-${uuidv4().slice(0, 8)}-${safe}`;
 
-                    try {
                         if (!f.buffer || f.buffer.length === 0 || f.size === 0) {
-                            return res.status(400).json({ success: false, message: `${f.originalname} isimli dosya boş (0 KB) görünüyor. Lütfen dosyanın bozuk olmadığından emin olun (iCloud veya cihazda tam yüklü olmalı).` });
+                            throw new Error(`${f.originalname} isimli dosya boş (0 KB) görünüyor. Lütfen dosyanın bozuk olmadığından emin olun (iCloud veya cihazda tam yüklü olmalı).`);
                         }
 
                         let finalUrl = '';
@@ -159,15 +159,25 @@ router.post('/basvuru', (req, res) => {
                             });
                         }
 
-                        yuklenenBelgeler[f.fieldname] = {
+                        return {
+                            fieldname: f.fieldname,
                             path: finalUrl,
                             originalname: f.originalname,
                             size: f.size
                         };
-                    } catch (upErr) {
-                        console.error("Cloudinary upload hatası:", upErr);
-                        return res.status(500).json({ success: false, message: 'Hata detayı: ' + (upErr.message || JSON.stringify(upErr)) });
-                    }
+                    });
+
+                    const uploadResults = await Promise.all(uploadPromises);
+                    uploadResults.forEach(item => {
+                        yuklenenBelgeler[item.fieldname] = {
+                            path: item.path,
+                            originalname: item.originalname,
+                            size: item.size
+                        };
+                    });
+                } catch (upErr) {
+                    console.error("Cloudinary upload hatası:", upErr);
+                    return res.status(500).json({ success: false, message: 'Dosya yükleme hatası: ' + (upErr.message || JSON.stringify(upErr)) });
                 }
             }
 

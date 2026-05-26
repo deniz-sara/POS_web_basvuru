@@ -99,18 +99,18 @@ router.post('/belge-yukle', upload.any(), async (req, res) => {
             await db.query("DELETE FROM documents WHERE application_id = $1 AND belge_tipi = $2 AND durum = 'eksik'", [app.id, tip]);
         }
 
-        for (const file of req.files) {
-            const belge_tipi = file.fieldname;
-            const ext = path.extname(file.originalname);
-            const safe = path.basename(file.originalname, ext).replace(/[^a-zA-Z0-9.\-]/g, '_');
-            const pubId = `${Date.now()}-guncelleme-${safe}`;
+        try {
+            const uploadPromises = req.files.map(async (file) => {
+                const belge_tipi = file.fieldname;
+                const ext = path.extname(file.originalname);
+                const safe = path.basename(file.originalname, ext).replace(/[^a-zA-Z0-9.\-]/g, '_');
+                const pubId = `${Date.now()}-guncelleme-${safe}`;
 
-            let secureUrl = '';
-            try {
                 if (!file.buffer || file.buffer.length === 0 || file.size === 0) {
-                    return res.status(400).json({ success: false, message: `${file.originalname} isimli dosya boş (0 KB) görünüyor. Lütfen dosyanın bozuk olmadığından emin olun.` });
+                    throw new Error(`${file.originalname} isimli dosya boş (0 KB) görünüyor. Lütfen dosyanın bozuk olmadığından emin olun.`);
                 }
 
+                let secureUrl = '';
                 if (ext === '.pdf') {
                     secureUrl = `data:application/pdf;base64,${file.buffer.toString('base64')}`;
                 } else {
@@ -126,16 +126,27 @@ router.post('/belge-yukle', upload.any(), async (req, res) => {
                         streamifier.createReadStream(file.buffer).pipe(uploadStream);
                     });
                 }
-            } catch (upErr) {
-                console.error("Cloudinary upload hatası (belge):", upErr);
-                return res.status(500).json({ success: false, message: 'Hata detayı: ' + (upErr.message || JSON.stringify(upErr)) });
+
+                return {
+                    belge_tipi,
+                    secureUrl,
+                    originalname: file.originalname,
+                    size: file.size
+                };
+            });
+
+            const uploadResults = await Promise.all(uploadPromises);
+
+            for (const result of uploadResults) {
+                // Her dosyayı yeni bir satır olarak ekle (böylece çoklu dosya desteği çalışır)
+                await db.query('INSERT INTO documents (application_id, belge_tipi, belge_adi, dosya_yolu, orijinal_ad, boyut, durum) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+                    [app.id, result.belge_tipi, BELGE_TIPLERI[result.belge_tipi] || result.belge_tipi, result.secureUrl, result.originalname, result.size, 'yuklendi']);
+
+                yuklenenAdlar.push(BELGE_TIPLERI[result.belge_tipi] || result.belge_tipi);
             }
-
-            // Her dosyayı yeni bir satır olarak ekle (böylece çoklu dosya desteği çalışır)
-            await db.query('INSERT INTO documents (application_id, belge_tipi, belge_adi, dosya_yolu, orijinal_ad, boyut, durum) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-                [app.id, belge_tipi, BELGE_TIPLERI[belge_tipi] || belge_tipi, secureUrl, file.originalname, file.size, 'yuklendi']);
-
-            yuklenenAdlar.push(BELGE_TIPLERI[belge_tipi] || belge_tipi);
+        } catch (upErr) {
+            console.error("Cloudinary upload hatası (belge):", upErr);
+            return res.status(500).json({ success: false, message: 'Hata detayı: ' + (upErr.message || JSON.stringify(upErr)) });
         }
 
         // Tüm eksik belgeler tamamlandı mı?
