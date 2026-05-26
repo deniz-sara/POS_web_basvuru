@@ -1212,12 +1212,22 @@
 
             // Hangi belgelerin mevcut olduğunu map'le
             const mevcut = {};
+            const groupedDocs = {};
+
             data.belgeler.forEach(d => {
                 mevcut[d.belge_tipi] = d;
 
-                let fileUrl = '';
+                if (!groupedDocs[d.belge_tipi]) {
+                    groupedDocs[d.belge_tipi] = {
+                        belge_adi: d.belge_adi,
+                        durum: d.durum,
+                        files: []
+                    };
+                }
+
                 if (d.dosya_yolu) {
                     const token = localStorage.getItem('pos_admin_token');
+                    let fileUrl = '';
                     if (d.dosya_yolu.startsWith('http')) {
                         fileUrl = d.dosya_yolu;
                     } else if (d.dosya_yolu.startsWith('/')) {
@@ -1226,22 +1236,46 @@
                         fileUrl = `/api/admin/dosya/${d.dosya_yolu.split(/[\\/]/).pop()}?token=${token}`;
                     }
 
-                    // URL is already fully formed by Cloudinary or local backend
+                    groupedDocs[d.belge_tipi].files.push({
+                        url: fileUrl,
+                        orijinal_ad: d.orijinal_ad || 'belge',
+                        yukleme_tarihi: d.yukleme_tarihi
+                    });
+                }
+            });
+
+            // Belgeleri kategori bazlı render et
+            Object.entries(groupedDocs).forEach(([type, group]) => {
+                let filesHtml = '';
+                if (group.files.length > 0) {
+                    filesHtml = `
+                        <div style="margin-top: 8px; display: flex; flex-direction: column; gap: 6px; padding-left: 10px; border-left: 2px solid var(--primary);">
+                            ${group.files.map((file, idx) => `
+                                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; background: #f8fafc; padding: 6px 10px; border-radius: 4px; border: 1px dashed #e2e8f0;">
+                                    <span style="color: #475569; font-weight: 500; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; max-width: 250px;" title="${file.orijinal_ad}">
+                                        ${idx + 1}. ${file.orijinal_ad}
+                                    </span>
+                                    <div style="display: flex; gap: 8px;">
+                                        <a href="#" onclick="forceDownload('${file.url}', '${file.orijinal_ad}', event)" class="doc-link" style="color: var(--primary); font-weight: 600; text-decoration: underline; font-size: 11px;">İndir</a>
+                                        <button onclick="openPreview('${file.url}', '${group.belge_adi} - ${idx + 1}')" class="doc-link" style="background: var(--secondary); color: #fff; border: none; padding: 2px 6px; border-radius: 4px; font-size: 10px; cursor: pointer;">Önizle</button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                } else {
+                    filesHtml = '<span style="color: red; font-size: 12px; margin-top: 4px; display: block;">Bekleniyor</span>';
                 }
 
                 docList.innerHTML += `
-                    <li class="doc-item ${d.durum === 'eksik' ? 'eksik' : ''}">
-                        <div>
-                            <span style="font-size:14px;font-weight:500">${d.belge_adi}</span>
-                            ${d.orijinal_ad ? `<span style="font-size:12px;color:#6b7280;margin-left:8px;">(${d.orijinal_ad})</span>` : ''}
-                            <div style="font-size:11px;color:#888">${d.durum === 'eksik' ? 'Eksik İşaretlendi' : new Date(d.yukleme_tarihi).toLocaleString()}</div>
+                    <li class="doc-item ${group.durum === 'eksik' ? 'eksik' : ''}" style="flex-direction: column; align-items: stretch; gap: 5px; padding: 12px; margin-bottom: 10px; border: 1px solid var(--border); border-radius: 6px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 14px; font-weight: 600; color: #1e293b;">${group.belge_adi}</span>
+                            <span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; font-weight: 500; background: ${group.durum === 'eksik' ? '#fee2e2' : '#d1fae5'}; color: ${group.durum === 'eksik' ? '#991b1b' : '#065f46'};">
+                                ${group.durum === 'eksik' ? 'Eksik' : 'Yüklendi'}
+                            </span>
                         </div>
-                        ${fileUrl ? `
-                            <div style="display:flex; gap:8px;">
-                                <a href="#" onclick="forceDownload('${fileUrl}', '${d.orijinal_ad || 'belge'}', event)" class="doc-link" style="color:var(--primary); font-weight:600; text-decoration:underline;">İndir</a>
-                                <button onclick="openPreview('${fileUrl}', '${d.belge_adi}')" class="doc-link" style="background:var(--secondary); color:#fff; border:none; padding:4px 10px; border-radius:4px; font-size:12px; cursor:pointer;">Önizle</button>
-                            </div>
-                        ` : '<span style="color:red;font-size:12px">Bekleniyor</span>'}
+                        ${filesHtml}
                     </li>
                 `;
             });
