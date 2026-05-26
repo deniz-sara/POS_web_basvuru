@@ -1262,11 +1262,24 @@
                     actionHtml = '<span style="color:red;font-size:12px">Bekleniyor</span>';
                 }
 
+                let statusBadge = '';
+                let durumText = 'Yüklendi (' + fileCount + ' Dosya)';
+                if (group.durum === 'eksik') {
+                    statusBadge = '<span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; font-weight: 600; background: #fee2e2; color: #991b1b; margin-left: 8px;">Eksik</span>';
+                    durumText = 'Yönetici tarafından eksik/hatalı olarak işaretlendi.';
+                } else if (group.durum === 'guncellendi') {
+                    statusBadge = '<span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; font-weight: 600; background: #dbeafe; color: #1e40af; margin-left: 8px; border: 1px solid #93c5fd; animation: pulse 2s infinite;">Yeni Yüklendi</span>';
+                    durumText = 'Eksik bildirim sonrası yeni yüklenen dosya(lar).';
+                }
+
                 docList.innerHTML += `
                     <li class="doc-item ${group.durum === 'eksik' ? 'eksik' : ''}">
                         <div>
-                            <span style="font-size:14px;font-weight:500">${group.belge_adi}</span>
-                            <div style="font-size:11px;color:#888">${group.durum === 'eksik' ? 'Eksik İşaretlendi' : 'Yüklendi (' + fileCount + ' Dosya)'}</div>
+                            <div style="display: flex; align-items: center; gap: 4px;">
+                                <span style="font-size:14px;font-weight:600;color:#1e293b;">${group.belge_adi}</span>
+                                ${statusBadge}
+                            </div>
+                            <div style="font-size:11px;color:#888;margin-top:2px;">${durumText}</div>
                         </div>
                         ${actionHtml}
                     </li>

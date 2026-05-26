@@ -192,28 +192,31 @@ router.post('/basvuru', (req, res) => {
 
             const applicationId = result.rows[0].id;
 
-            // Belgeleri kaydet
+            // Belgeleri paralel olarak kaydet (Neon DB ağ gecikmesini engellemek için)
             const docStmt = `
       INSERT INTO documents (application_id, belge_tipi, belge_adi, dosya_yolu, orijinal_ad, boyut, zorunlu)
       VALUES ($1, $2, $3, $4, $5, $6, $7)
     `;
-            for (const file of yuklenenBelgeler) {
-                await db.query(docStmt, [applicationId, file.fieldname, BELGE_TIPLERI[file.fieldname] || file.fieldname, file.path, file.originalname, file.size, ZORUNLU_BELGELER.includes(file.fieldname) ? 1 : 0]);
-            }
+            const docPromises = yuklenenBelgeler.map(file => 
+                db.query(docStmt, [applicationId, file.fieldname, BELGE_TIPLERI[file.fieldname] || file.fieldname, file.path, file.originalname, file.size, ZORUNLU_BELGELER.includes(file.fieldname) ? 1 : 0])
+            );
+            await Promise.all(docPromises);
 
-            // Email & SMS gönder (async, hatalar ana akışı bozmasın diye try-catch içinde)
-            try {
-                const emailData = { basvuru_no: basvuruNo, token, firma_unvani, yetkili_ad_soyad, telefon, email, pos_adedi, pos_tipi, il, ilce };
-                sendEmail(email, 'basvuruAlindiMusteri', emailData).catch(e => console.error('Müşteri email hatası:', e));
-                sendEmail(ADMIN_EMAIL, 'basvuruAlindiAdmin', emailData).catch(e => console.error('Admin email hatası:', e));
-                sendSMS(telefon, smsTemplates.basvuruAlindi(basvuruNo, token)).catch(e => console.error('SMS hatası:', e));
+            // Email & SMS gönder & logla (Arka planda çalışması için await etmeden asenkron IIFE içine alıyoruz)
+            (async () => {
+                try {
+                    const emailData = { basvuru_no: basvuruNo, token, firma_unvani, yetkili_ad_soyad, telefon, email, pos_adedi, pos_tipi, il, ilce };
+                    sendEmail(email, 'basvuruAlindiMusteri', emailData).catch(e => console.error('Müşteri email hatası:', e));
+                    sendEmail(ADMIN_EMAIL, 'basvuruAlindiAdmin', emailData).catch(e => console.error('Admin email hatası:', e));
+                    sendSMS(telefon, smsTemplates.basvuruAlindi(basvuruNo, token)).catch(e => console.error('SMS hatası:', e));
 
-                // Log notification
-                await db.query(`INSERT INTO notifications (application_id, tip, alici, konu, icerik) VALUES ($1, $2, $3, $4, $5)`, [applicationId, 'email', email, 'Başvuru Alındı', basvuruNo]).catch(e => console.error('DB email log hatası:', e));
-                await db.query(`INSERT INTO notifications (application_id, tip, alici, konu, icerik) VALUES ($1, $2, $3, $4, $5)`, [applicationId, 'sms', telefon, 'Başvuru Alındı', basvuruNo]).catch(e => console.error('DB sms log hatası:', e));
-            } catch (notifErr) {
-                console.error('Bildirim gönderim hatası (göz ardı edildi):', notifErr);
-            }
+                    // Log notification (Arka planda paralel çalışsın)
+                    db.query(`INSERT INTO notifications (application_id, tip, alici, konu, icerik) VALUES ($1, $2, $3, $4, $5)`, [applicationId, 'email', email, 'Başvuru Alındı', basvuruNo]).catch(e => console.error('DB email log hatası:', e));
+                    db.query(`INSERT INTO notifications (application_id, tip, alici, konu, icerik) VALUES ($1, $2, $3, $4, $5)`, [applicationId, 'sms', telefon, 'Başvuru Alındı', basvuruNo]).catch(e => console.error('DB sms log hatası:', e));
+                } catch (notifErr) {
+                    console.error('Bildirim gönderim/log hatası:', notifErr);
+                }
+            })();
 
             res.json({ success: true, basvuru_no: basvuruNo, token, message: 'Başvurunuz alındı.' });
         } catch (err) {

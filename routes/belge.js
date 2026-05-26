@@ -93,10 +93,10 @@ router.post('/belge-yukle', upload.any(), async (req, res) => {
 
         const yuklenenAdlar = [];
         
-        // Önce yüklenen belge tipleri için eksik kayıtları sil (böylece üzerine yazmak yerine hepsini insert edeceğiz)
+        // Önce o kategoriye ait tüm eski dosyaları sil (böylece son yüklenen dosyalar güncel halini oluşturur)
         const secilenBelgeTipleri = [...new Set(req.files.map(f => f.fieldname))];
         for (const tip of secilenBelgeTipleri) {
-            await db.query("DELETE FROM documents WHERE application_id = $1 AND belge_tipi = $2 AND durum = 'eksik'", [app.id, tip]);
+            await db.query("DELETE FROM documents WHERE application_id = $1 AND belge_tipi = $2", [app.id, tip]);
         }
 
         try {
@@ -138,9 +138,9 @@ router.post('/belge-yukle', upload.any(), async (req, res) => {
             const uploadResults = await Promise.all(uploadPromises);
 
             for (const result of uploadResults) {
-                // Her dosyayı yeni bir satır olarak ekle (böylece çoklu dosya desteği çalışır)
+                // Her dosyayı yeni bir satır olarak ekle, yeni yükleme olduğu için 'guncellendi' durumunda kaydet
                 await db.query('INSERT INTO documents (application_id, belge_tipi, belge_adi, dosya_yolu, orijinal_ad, boyut, durum) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-                    [app.id, result.belge_tipi, BELGE_TIPLERI[result.belge_tipi] || result.belge_tipi, result.secureUrl, result.originalname, result.size, 'yuklendi']);
+                    [app.id, result.belge_tipi, BELGE_TIPLERI[result.belge_tipi] || result.belge_tipi, result.secureUrl, result.originalname, result.size, 'guncellendi']);
 
                 yuklenenAdlar.push(BELGE_TIPLERI[result.belge_tipi] || result.belge_tipi);
             }
