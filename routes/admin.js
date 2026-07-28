@@ -72,7 +72,11 @@ router.get('/basvurular', authMiddleware, async (req, res) => {
         if (req.query.tarih_bitis) { query += ` AND (a.basvuru_tarihi AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Istanbul')::date <= $${paramCount++}::date`; params.push(req.query.tarih_bitis); }
         if (req.query.pos_tipi) { query += ` AND a.pos_tipi ILIKE $${paramCount++}`; params.push(`%${req.query.pos_tipi}%`); }
 
-        query += ' GROUP BY a.id ORDER BY a.basvuru_tarihi DESC';
+        if (req.query.sort === 'sla_desc') {
+            query += ' GROUP BY a.id ORDER BY a.sla_toplam_saat DESC NULLS LAST, a.basvuru_tarihi ASC';
+        } else {
+            query += ' GROUP BY a.id ORDER BY a.basvuru_tarihi DESC';
+        }
 
         if (req.query.limit) { query += ` LIMIT $${paramCount++}`; params.push(parseInt(req.query.limit)); }
 
@@ -96,8 +100,9 @@ router.get('/basvuru/:id', authMiddleware, async (req, res) => {
             FROM documents WHERE application_id = $1
         `, [app.id]);
         const notesRes = await db.query('SELECT n.*, u.ad_soyad FROM application_notes n LEFT JOIN admin_users u ON n.admin_id = u.id WHERE n.application_id = $1 ORDER BY n.olusturma_tarihi DESC', [app.id]);
+        const historyRes = await db.query('SELECT * FROM status_history WHERE application_id = $1 ORDER BY id ASC', [app.id]);
 
-        res.json({ success: true, basvuru: app, belgeler: docsRes.rows, notlar: notesRes.rows });
+        res.json({ success: true, basvuru: app, belgeler: docsRes.rows, notlar: notesRes.rows, history: historyRes.rows });
     } catch (err) {
         res.status(500).json({ success: false, message: 'Sunucu hatası' });
     }
@@ -136,7 +141,29 @@ router.put('/basvuru/:id/durum', authMiddleware, async (req, res) => {
         const app = appRes.rows[0];
         if (!app) return res.status(404).json({ success: false, message: 'Başvuru bulunamadı.' });
 
-        await db.query(`UPDATE applications SET durum = $1, durum_aciklama = $2, guncelleme_tarihi = CURRENT_TIMESTAMP WHERE id = $3`, [durum, aciklama || null, app.id]);
+        // SLA / History Logic
+        if (app.durum !== durum) {
+            const activeHistoryRes = await db.query('SELECT id, baslangic_tarihi FROM status_history WHERE application_id = $1 AND bitis_tarihi IS NULL ORDER BY id DESC LIMIT 1', [app.id]);
+            const activeHistory = activeHistoryRes.rows[0];
+            if (activeHistory) {
+                const baslangic = new Date(activeHistory.baslangic_tarihi);
+                const simdi = new Date();
+                const gecenDakika = Math.round((simdi - baslangic) / 60000);
+                await db.query('UPDATE status_history SET bitis_tarihi = CURRENT_TIMESTAMP, gecen_sure_dk = $1 WHERE id = $2', [gecenDakika, activeHistory.id]);
+            }
+            await db.query('INSERT INTO status_history (application_id, durum) VALUES ($1, $2)', [app.id, durum]);
+        }
+        
+        let extraUpdate = '';
+        let extraParams = [];
+        let pIndex = 4;
+        if (durum === 'onaylandi' && app.durum !== 'onaylandi') {
+            const totalSaat = Math.round((new Date() - new Date(app.basvuru_tarihi)) / 3600000 * 10) / 10;
+            extraUpdate = `, sla_toplam_saat = $${pIndex++}, onaylanma_tarihi = CURRENT_TIMESTAMP`;
+            extraParams.push(totalSaat);
+        }
+
+        await db.query(`UPDATE applications SET durum = $1, durum_aciklama = $2, guncelleme_tarihi = CURRENT_TIMESTAMP${extraUpdate} WHERE id = $3`, [durum, aciklama || null, app.id, ...extraParams]);
 
         await db.query(`INSERT INTO admin_logs (admin_id, islem_tipi, basvuru_id, detay) VALUES ($1, $2, $3, $4)`,
             [req.admin.id, 'Durum Güncelleme', app.id, `Durum '${DURUM_LABELS[durum] || durum}' olarak güncellendi. ${aciklama ? 'Not: ' + aciklama : ''}`]);
@@ -276,7 +303,9 @@ router.get('/export', authMiddleware, async (req, res) => {
                 'Cihaz Detayları': cihazlarStr,
                 'Tahmini Ciro': b.aylik_ciro,
                 'Durum': durumLabels[b.durum] || b.durum,
-                'Tarih': b.basvuru_tarihi
+                'Tarih': b.basvuru_tarihi,
+                'SLA (Toplam Saat)': b.sla_toplam_saat || 0,
+                'Onaylanma Tarihi': b.onaylanma_tarihi || '-'
             };
         });
 

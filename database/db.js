@@ -45,7 +45,9 @@ const initializeDatabase = async () => {
         durum_aciklama TEXT,
         
         basvuru_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        guncelleme_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        guncelleme_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        sla_toplam_saat REAL,
+        onaylanma_tarihi TIMESTAMP
       );
 
       CREATE TABLE IF NOT EXISTS documents (
@@ -102,6 +104,16 @@ const initializeDatabase = async () => {
         FOREIGN KEY (admin_id) REFERENCES admin_users(id),
         FOREIGN KEY (basvuru_id) REFERENCES applications(id)
       );
+      
+      CREATE TABLE IF NOT EXISTS status_history (
+        id SERIAL PRIMARY KEY,
+        application_id INTEGER NOT NULL,
+        durum TEXT NOT NULL,
+        baslangic_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        bitis_tarihi TIMESTAMP,
+        gecen_sure_dk INTEGER,
+        FOREIGN KEY (application_id) REFERENCES applications(id)
+      );
     `);
 
     // Auto-migration for existing databases
@@ -143,6 +155,13 @@ const initializeDatabase = async () => {
       await pool.query('ALTER TABLE applications ADD COLUMN website_url TEXT');
       console.log("Migration: website_url kolonu eklendi.");
     } catch (e) { } // Ignores error if column already exists
+    
+    // Auto-migration for existing databases: sla columns
+    try {
+      await pool.query('ALTER TABLE applications ADD COLUMN sla_toplam_saat REAL');
+      await pool.query('ALTER TABLE applications ADD COLUMN onaylanma_tarihi TIMESTAMP');
+      console.log("Migration: SLA kolonları eklendi.");
+    } catch (e) { }
 
     // Default admin eklentisi
     const bcrypt = require('bcryptjs');

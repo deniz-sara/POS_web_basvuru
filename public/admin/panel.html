@@ -604,6 +604,13 @@
                             <option value="">Tümü</option>
                         </select>
                     </div>
+                    <div class="form-group">
+                        <label>Sıralama</label>
+                        <select id="f_sort">
+                            <option value="">Tarih (En Yeni)</option>
+                            <option value="sla_desc">SLA (Süresi Uzayanlar)</option>
+                        </select>
+                    </div>
                     <button class="btn btn-primary" onclick="loadBasvurular()">Filtrele</button>
                     <button class="btn btn-outline" onclick="clearFilters()">Temizle</button>
                 </div>
@@ -616,7 +623,8 @@
                                 <th>Başvuru No</th>
                                 <th>Firma Unvanı</th>
                                 <th>İl</th>
-                                <th>Başvurulan Ürünler</th>
+                                <th>Talep</th>
+                                <th>SLA (Bekleme)</th>
                                 <th>Durum</th>
                             </tr>
                         </thead>
@@ -738,6 +746,11 @@
                     <div class="detail-section">
                         <h4>Yüklenen Belgeler</h4>
                         <ul class="doc-list" id="m_docs"></ul>
+                    </div>
+                    
+                    <div class="detail-section">
+                        <h4>SLA Geçmişi</h4>
+                        <div id="m_sla_history" style="font-size: 13px; background: #f9fafb; padding: 10px; border-radius: 6px; border: 1px solid var(--border);"></div>
                     </div>
                 </div>
 
@@ -1078,6 +1091,7 @@
             if (document.getElementById('f_tarih_bitis').value) params.append('tarih_bitis', document.getElementById('f_tarih_bitis').value);
             if (document.getElementById('f_il').value) params.append('il', document.getElementById('f_il').value);
             if (document.getElementById('f_urun').value) params.append('pos_tipi', document.getElementById('f_urun').value);
+            if (document.getElementById('f_sort') && document.getElementById('f_sort').value) params.append('sort', document.getElementById('f_sort').value);
             return params;
         }
 
@@ -1097,7 +1111,12 @@
                         <td style="font-weight:600;color:var(--primary)">${b.basvuru_no}</td>
                         <td>${b.firma_unvani}</td>
                         <td>${b.il || '-'}</td>
-                        <td style="max-width:200px; white-space:normal; font-size:12px;">${b.pos_tipi || '-'}</td>
+                        <td>${b.pos_adedi}x ${b.pos_tipi}</td>
+                        <td>
+                            <div style="font-weight: 600; color: ${b.sla_toplam_saat > 48 ? 'var(--error)' : 'inherit'};">
+                                ${b.sla_toplam_saat ? b.sla_toplam_saat + ' Saat' : '-'}
+                            </div>
+                        </td>
                         <td><span class="badge ${b.durum}">${DURUM_LABELS[b.durum] || b.durum}</span>
                             ${b.eksik_belge > 0 ? `<br><span style="font-size:11px;color:red">${b.eksik_belge} belge eksik</span>` : ''}
                         </td>
@@ -1299,6 +1318,19 @@
 
             // Notlar
             renderNotlar(data.notlar);
+
+            // SLA History
+            const slaBox = document.getElementById('m_sla_history');
+            if (data.history && data.history.length > 0) {
+                slaBox.innerHTML = data.history.map(h => {
+                    const durumStr = DURUM_LABELS[h.durum] || h.durum;
+                    const baslangicStr = new Date(h.baslangic_tarihi).toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+                    const sureStr = h.gecen_sure_dk != null ? ` (${Math.floor(h.gecen_sure_dk / 60)} Saat ${h.gecen_sure_dk % 60} Dk)` : ' (Devam Ediyor)';
+                    return `<div style="margin-bottom: 5px; border-bottom: 1px solid #eee; padding-bottom: 4px;"><strong>${durumStr}</strong>: ${baslangicStr} - <span style="color:#6b7280">${sureStr}</span></div>`;
+                }).join('');
+            } else {
+                slaBox.innerHTML = 'Kayıt bulunamadı.';
+            }
 
             document.getElementById('detailModal').style.display = 'flex';
         }
