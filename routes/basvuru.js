@@ -72,7 +72,7 @@ router.post('/basvuru', (req, res) => {
                 firma_unvani, tabela_adi, sirket_tipi, tc_no, vergi_no, vergi_dairesi,
                 faaliyet_alani, adres, il, ilce,
                 yetkili_ad_soyad, telefon, email, alt_telefon,
-                pos_adedi, pos_tipi, aylik_ciro, cihaz_detaylari, website_url, odeme_periyodu
+                pos_adedi, pos_tipi, aylik_ciro, cihaz_detaylari, website_url, odeme_periyodu, draft_token
             } = req.body;
 
             // Zorunlu alan validasyonu
@@ -175,32 +175,51 @@ router.post('/basvuru', (req, res) => {
                 }
             }
 
-            const basvuruNo = generateBasvuruNo();
-            const token = uuidv4();
+            let basvuruNo = generateBasvuruNo();
+            let token = uuidv4();
+            let applicationId = null;
 
-            // Başvuruyu kaydet
-            const stmt = `
-      INSERT INTO applications (basvuru_no, token, firma_unvani, tabela_adi, sirket_tipi, tc_no, vergi_no, vergi_dairesi, ticaret_sicil_no,
-        faaliyet_alani, adres, il, ilce, yetkili_ad_soyad, telefon, email, alt_telefon,
-        pos_adedi, pos_tipi, aylik_ciro, cihaz_detaylari, ort_islem_tutari, website_url, odeme_periyodu)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
-      RETURNING id
-    `;
-            const result = await db.query(stmt, [basvuruNo, token, firma_unvani, tabela_adi || '', sirket_tipi, tc_no, vergi_no, vergi_dairesi, '',
-                faaliyet_alani, adres, il, ilce, yetkili_ad_soyad, telefon, email, alt_telefon || null,
-                parseInt(pos_adedi) || 0, pos_tipi, parseFloat(aylik_ciro), cihaz_detaylari || null, 0, website_url || null, odeme_periyodu]);
+            if (draft_token) {
+                const existing = await db.query("SELECT id, basvuru_no, token FROM applications WHERE token = $1 AND durum = 'taslak'", [draft_token]);
+                if (existing.rows.length > 0) {
+                    applicationId = existing.rows[0].id;
+                    basvuruNo = existing.rows[0].basvuru_no;
+                    token = existing.rows[0].token;
 
-            const applicationId = result.rows[0].id;
+                    await db.query(`UPDATE applications SET durum='alindi', basvuru_tarihi=CURRENT_TIMESTAMP,
+                        firma_unvani=$1, tabela_adi=$2, sirket_tipi=$3, tc_no=$4, vergi_no=$5, vergi_dairesi=$6, faaliyet_alani=$7, adres=$8, il=$9, ilce=$10, yetkili_ad_soyad=$11, telefon=$12, email=$13, alt_telefon=$14, pos_adedi=$15, pos_tipi=$16, aylik_ciro=$17, cihaz_detaylari=$18, website_url=$19, odeme_periyodu=$20, guncelleme_tarihi=CURRENT_TIMESTAMP
+                        WHERE id=$21`, 
+                        [firma_unvani, tabela_adi || '', sirket_tipi, tc_no, vergi_no, vergi_dairesi, faaliyet_alani, adres, il, ilce, yetkili_ad_soyad, telefon, email, alt_telefon || null, parseInt(pos_adedi) || 0, pos_tipi, parseFloat(aylik_ciro), cihaz_detaylari || null, website_url || null, odeme_periyodu, applicationId]);
+                }
+            }
+
+            if (!applicationId) {
+                const stmt = `
+                    INSERT INTO applications (basvuru_no, token, firma_unvani, tabela_adi, sirket_tipi, tc_no, vergi_no, vergi_dairesi, ticaret_sicil_no,
+                        faaliyet_alani, adres, il, ilce, yetkili_ad_soyad, telefon, email, alt_telefon,
+                        pos_adedi, pos_tipi, aylik_ciro, cihaz_detaylari, ort_islem_tutari, website_url, odeme_periyodu)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
+                    RETURNING id
+                `;
+                const result = await db.query(stmt, [basvuruNo, token, firma_unvani, tabela_adi || '', sirket_tipi, tc_no, vergi_no, vergi_dairesi, '', faaliyet_alani, adres, il, ilce, yetkili_ad_soyad, telefon, email, alt_telefon || null, parseInt(pos_adedi) || 0, pos_tipi, parseFloat(aylik_ciro), cihaz_detaylari || null, 0, website_url || null, odeme_periyodu]);
+                applicationId = result.rows[0].id;
+            }
 
             // Belgeleri paralel olarak kaydet (Neon DB ağ gecikmesini engellemek için)
-            const docStmt = `
-      INSERT INTO documents (application_id, belge_tipi, belge_adi, dosya_yolu, orijinal_ad, boyut, zorunlu)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-    `;
-            const docPromises = yuklenenBelgeler.map(file => 
-                db.query(docStmt, [applicationId, file.fieldname, BELGE_TIPLERI[file.fieldname] || file.fieldname, file.path, file.originalname, file.size, ZORUNLU_BELGELER.includes(file.fieldname) ? 1 : 0])
-            );
-            await Promise.all(docPromises);
+            if (yuklenenBelgeler.length > 0) {
+                if (draft_token) {
+                    const fieldNames = yuklenenBelgeler.map(f => f.fieldname);
+                    await db.query('DELETE FROM documents WHERE application_id = $1 AND belge_tipi = ANY($2)', [applicationId, fieldNames]);
+                }
+                const docStmt = `
+                    INSERT INTO documents (application_id, belge_tipi, belge_adi, dosya_yolu, orijinal_ad, boyut, zorunlu)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7)
+                `;
+                const docPromises = yuklenenBelgeler.map(file => 
+                    db.query(docStmt, [applicationId, file.fieldname, BELGE_TIPLERI[file.fieldname] || file.fieldname, file.path, file.originalname, file.size, ZORUNLU_BELGELER.includes(file.fieldname) ? 1 : 0])
+                );
+                await Promise.all(docPromises);
+            }
 
             // Email & SMS gönder & logla (Arka planda çalışması için await etmeden asenkron IIFE içine alıyoruz)
             (async () => {
@@ -224,6 +243,101 @@ router.post('/basvuru', (req, res) => {
             res.status(500).json({ success: false, message: 'Sunucu hatası: ' + err.message });
         }
     }); // End of upload wrapper
+});
+
+
+// GET /api/pos/taslak/:token - Taslak getir
+router.get('/taslak/:token', async (req, res) => {
+    try {
+        const appRes = await db.query("SELECT * FROM applications WHERE token = $1 AND durum = 'taslak'", [req.params.token]);
+        if (appRes.rows.length === 0) return res.status(404).json({ success: false, message: 'Taslak bulunamadı.' });
+        const app = appRes.rows[0];
+        const docsRes = await db.query('SELECT belge_tipi, orijinal_ad FROM documents WHERE application_id = $1', [app.id]);
+        res.json({ success: true, basvuru: app, belgeler: docsRes.rows });
+    } catch (err) {
+        res.status(500).json({ success: false });
+    }
+});
+
+// POST /api/pos/taslak - Taslak kaydet
+router.post('/taslak', (req, res) => {
+    upload.any()(req, res, async (uploadErr) => {
+        if (uploadErr) {
+            if (uploadErr.code === 'LIMIT_FILE_SIZE') {
+                return res.status(400).json({ success: false, message: 'Yüklenen dosyalardan biri çok büyük (Maksimum 10MB).' });
+            }
+            return res.status(400).json({ success: false, message: 'Dosya yükleme hatası: ' + uploadErr.message });
+        }
+        try {
+            const { draft_token, firma_unvani, tabela_adi, sirket_tipi, tc_no, vergi_no, vergi_dairesi, faaliyet_alani, adres, il, ilce, yetkili_ad_soyad, telefon, email, alt_telefon, pos_adedi, pos_tipi, aylik_ciro, cihaz_detaylari, website_url, odeme_periyodu } = req.body;
+
+            let yuklenenBelgeler = [];
+            if (req.files && req.files.length > 0) {
+                try {
+                    const uploadPromises = req.files.map(file => uploadToCloudinary(file.path));
+                    const uploadResults = await Promise.all(uploadPromises);
+                    yuklenenBelgeler.push(...uploadResults);
+                } catch (upErr) {
+                    return res.status(500).json({ success: false, message: 'Dosya yükleme hatası.' });
+                }
+            }
+
+            let currentToken = draft_token;
+            let applicationId = null;
+
+            if (currentToken) {
+                const existing = await db.query("SELECT id FROM applications WHERE token = $1 AND durum = 'taslak'", [currentToken]);
+                if (existing.rows.length > 0) {
+                    applicationId = existing.rows[0].id;
+                    await db.query(`UPDATE applications SET
+                        firma_unvani=$1, tabela_adi=$2, sirket_tipi=$3, tc_no=$4, vergi_no=$5, vergi_dairesi=$6, faaliyet_alani=$7, adres=$8, il=$9, ilce=$10, yetkili_ad_soyad=$11, telefon=$12, email=$13, alt_telefon=$14, pos_adedi=$15, pos_tipi=$16, aylik_ciro=$17, cihaz_detaylari=$18, website_url=$19, odeme_periyodu=$20, guncelleme_tarihi=CURRENT_TIMESTAMP
+                        WHERE id=$21`, 
+                        [firma_unvani||'', tabela_adi||'', sirket_tipi||'', tc_no||'', vergi_no||'', vergi_dairesi||'', faaliyet_alani||'', adres||'', il||'', ilce||'', yetkili_ad_soyad||'', telefon||'', email||'', alt_telefon||null, parseInt(pos_adedi)||0, pos_tipi||'', parseFloat(aylik_ciro)||0, cihaz_detaylari||null, website_url||null, odeme_periyodu||'', applicationId]);
+                }
+            }
+
+            if (!applicationId) {
+                const basvuruNo = generateBasvuruNo();
+                currentToken = uuidv4();
+                const stmt = `
+                    INSERT INTO applications (basvuru_no, token, durum, firma_unvani, tabela_adi, sirket_tipi, tc_no, vergi_no, vergi_dairesi, ticaret_sicil_no, faaliyet_alani, adres, il, ilce, yetkili_ad_soyad, telefon, email, alt_telefon, pos_adedi, pos_tipi, aylik_ciro, cihaz_detaylari, ort_islem_tutari, website_url, odeme_periyodu)
+                    VALUES ($1, $2, 'taslak', $3, $4, $5, $6, $7, $8, '', $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, 0, $21, $22)
+                    RETURNING id
+                `;
+                const result = await db.query(stmt, [basvuruNo, currentToken, firma_unvani||'', tabela_adi||'', sirket_tipi||'', tc_no||'', vergi_no||'', vergi_dairesi||'', faaliyet_alani||'', adres||'', il||'', ilce||'', yetkili_ad_soyad||'', telefon||'', email||'', alt_telefon||null, parseInt(pos_adedi)||0, pos_tipi||'', parseFloat(aylik_ciro)||0, cihaz_detaylari||null, website_url||null, odeme_periyodu||'']);
+                applicationId = result.rows[0].id;
+            }
+
+            if (yuklenenBelgeler.length > 0) {
+                const fieldNames = yuklenenBelgeler.map(f => f.fieldname);
+                await db.query('DELETE FROM documents WHERE application_id = $1 AND belge_tipi = ANY($2)', [applicationId, fieldNames]);
+
+                const docStmt = 'INSERT INTO documents (application_id, belge_tipi, belge_adi, dosya_yolu, orijinal_ad, boyut, zorunlu) VALUES ($1, $2, $3, $4, $5, $6, $7)';
+                const docPromises = yuklenenBelgeler.map(file => 
+                    db.query(docStmt, [applicationId, file.fieldname, BELGE_TIPLERI[file.fieldname] || file.fieldname, file.path, file.originalname, file.size, ZORUNLU_BELGELER.includes(file.fieldname) ? 1 : 0])
+                );
+                await Promise.all(docPromises);
+            }
+
+            const resumeUrl = `${process.env.BASE_URL || process.env.RENDER_EXTERNAL_URL || 'http://localhost:3000'}/pos/basvuru.html?draft_token=${currentToken}`;
+            const emailHtml = `<div style="font-family:sans-serif;color:#333;">
+                <h2>Başvurunuz Taslak Olarak Kaydedildi</h2>
+                <p>Sayın ${yetkili_ad_soyad || 'Yetkili'},</p>
+                <p>QNBpay POS başvurunuz taslak olarak kaydedilmiştir. Başvurunuza kaldığınız yerden devam etmek için aşağıdaki bağlantıya tıklayabilirsiniz:</p>
+                <p><a href="${resumeUrl}" style="display:inline-block;padding:10px 20px;background:#0d9488;color:#fff;text-decoration:none;border-radius:5px;font-weight:bold;">Başvuruya Devam Et</a></p>
+                <p>Bağlantı çalışmazsa şu adresi kopyalayıp tarayıcınıza yapıştırın:<br>${resumeUrl}</p>
+                <p>İyi çalışmalar dileriz.</p>
+            </div>`;
+            
+            if (email) {
+                await sendEmail(email, 'custom', { subject: 'QNBpay POS Başvuru Taslağınız', html: emailHtml });
+            }
+            res.json({ success: true, token: currentToken, message: 'Taslak kaydedildi, devam linki e-postanıza gönderildi.' });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ success: false, message: 'Sunucu hatası: ' + err.message });
+        }
+    });
 });
 
 // GET /api/pos/durum/:token - Başvuru durum sorgulama

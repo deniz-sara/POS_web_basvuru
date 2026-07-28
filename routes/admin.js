@@ -67,6 +67,12 @@ router.get('/basvurular', authMiddleware, async (req, res) => {
         const params = [];
         let paramCount = 1;
 
+        if (req.query.taslak === 'true') {
+            query += ` AND a.durum = 'taslak'`;
+        } else {
+            query += ` AND a.durum != 'taslak'`;
+        }
+
         if (req.query.durum) { query += ` AND a.durum = $${paramCount++}`; params.push(req.query.durum); }
         if (req.query.il) { query += ` AND a.il = $${paramCount++}`; params.push(req.query.il); }
         if (req.query.basvuru_no) { query += ` AND a.basvuru_no ILIKE $${paramCount++}`; params.push(`%${req.query.basvuru_no}%`); }
@@ -322,8 +328,8 @@ const xlsx = require('xlsx');
 // GET /api/admin/export - XLSX export
 router.get('/export', authMiddleware, async (req, res) => {
     try {
-        let query = `SELECT * FROM applications WHERE 1=1`;
-        const params = [];
+        let query = `SELECT * FROM applications WHERE 1=1 AND durum != 'taslak'`;
+        let params = [];
         let paramCount = 1;
 
         if (req.query.durum) { query += ` AND durum = $${paramCount++}`; params.push(req.query.durum); }

@@ -547,7 +547,7 @@
             <span style="font-size: 16px;">POS Başvuru Yönetimi</span>
         </div>
         <div class="nav-menu">
-            <a class="nav-item active" id="nav-basvuru" onclick="showView('basvuru')">Tüm Başvurular</a>
+            <a class="nav-item active" id="nav-basvuru" onclick="showView('basvuru')">Tüm Başvurular</a>\n            <a class="nav-item" id="nav-taslak" onclick="showView('taslak')">Yarım Kalanlar (Taslak)</a>
             <a class="nav-item" id="nav-kullanici" onclick="showView('kullanici')">Yöneticiler</a>
             <a class="nav-item" id="nav-logs" onclick="showView('logs')">İşlem Geçmişi</a>
             <a class="nav-item" id="nav-paketler" onclick="showView('paketler')">Paketler</a>
@@ -951,7 +951,7 @@
         document.getElementById('adminName').innerText = user.ad_soyad || 'Admin';
 
         let currentActiveId = null;
-        let currentView = 'basvuru';
+        let currentView = 'basvuru';\n        let isTaslakView = false;
 
         function showView(viewId) {
             currentView = viewId;
@@ -964,11 +964,22 @@
             document.getElementById('view-paketler').style.display = 'none';
             document.getElementById('btnExport').style.display = 'none';
 
-            if (viewId === 'basvuru') {
+            if (viewId === 'basvuru' || viewId === 'taslak') {
+                isTaslakView = (viewId === 'taslak');
                 document.getElementById('view-basvuru').style.display = 'block';
-                document.getElementById('pageTitle').innerText = 'Başvurular';
-                document.getElementById('btnExport').style.display = 'inline-block';
-                loadDashboard();
+                document.getElementById('pageTitle').innerText = isTaslakView ? 'Yarım Kalan Başvurular (Taslak)' : 'Başvurular';
+                document.getElementById('btnExport').style.display = isTaslakView ? 'none' : 'inline-block';
+                
+                const statsEl = document.getElementById('statsGrid');
+                if (statsEl) statsEl.style.display = isTaslakView ? 'none' : 'grid';
+
+                // clear filters
+                if (document.getElementById('f_no')) document.getElementById('f_no').value = '';
+                if (document.getElementById('f_firma')) document.getElementById('f_firma').value = '';
+                if (document.getElementById('f_durum')) document.getElementById('f_durum').value = '';
+                
+                loadBasvurular();
+                if (!isTaslakView) loadDashboard();
                 loadPaketlerDropdown();
             } else if (viewId === 'kullanici') {
                 document.getElementById('view-kullanici').style.display = 'block';
@@ -992,7 +1003,7 @@
             ek_bilgi: 'Evrak Bekleniyor',
             teklif_bekleniyor: 'Teklif Bekleniyor',
             onaylandi: 'Onaylandı',
-            reddedildi: 'Reddedildi'
+            reddedildi: 'Reddedildi',\n            taslak: 'Taslak (Yarım Kalan)'
         };
 
         const BELGE_TIPLERI = {
@@ -1225,6 +1236,7 @@
             if (document.getElementById('f_urun').value) params.append('pos_tipi', document.getElementById('f_urun').value);
             if (document.getElementById('f_sort') && document.getElementById('f_sort').value) params.append('sort', document.getElementById('f_sort').value);
             if (currentSlaFilter) params.append('sla_gecen', 'true');
+            if (isTaslakView) params.append('taslak', 'true');
             return params;
         }
 

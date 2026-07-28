@@ -262,6 +262,7 @@
                 <!-- Buttons -->
                 <div class="btn-group" id="btnGroup">
                     <button type="button" class="btn btn-prev hidden" id="prevBtn" onclick="nextPrev(-1)">Geri</button>
+                    <button type="button" class="btn btn-outline hidden" id="saveDraftBtn" onclick="openDraftModal()" style="margin-right:auto; margin-left:10px; border-color:var(--primary); color:var(--primary);">Sonra Devam Et</button>
                     <div style="flex:1"></div>
                     <button type="button" class="btn btn-next" id="nextBtn" onclick="nextPrev(1)">İleri</button>
                     <button type="button" class="btn btn-submit hidden" id="submitBtn" onclick="submitForm()">Başvuruyu
@@ -628,10 +629,13 @@
                 }
             }
 
-            if (n === 0) {
+            // Back button visibility
+            if (n == 0) {
                 btnPrev.classList.add("hidden");
+                document.getElementById("saveDraftBtn").classList.add('hidden');
             } else {
                 btnPrev.classList.remove("hidden");
+                document.getElementById("saveDraftBtn").classList.remove('hidden');
             }
 
             if (n === 3) { // 4th step
@@ -709,6 +713,9 @@
 
             const form = document.getElementById('posForm');
             const data = new FormData(form);
+            if (draftToken) {
+                data.append('draft_token', draftToken);
+            }
 
             // Clean up aylik_ciro (remove formatting commas before sending)
             if (data.has('aylik_ciro')) {
@@ -795,7 +802,181 @@
         }
 
         init();
+
+        let draftToken = new URLSearchParams(window.location.search).get('draft_token') || '';
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (draftToken) {
+                try {
+                    const res = await fetch('/api/pos/taslak/' + draftToken);
+                    const data = await res.json();
+                    if (data.success) {
+                        const b = data.basvuru;
+                        // Metin alanları
+                        ['firma_unvani', 'tabela_adi', 'tc_no', 'vergi_no', 'faaliyet_alani', 'adres', 'yetkili_ad_soyad', 'telefon', 'email', 'alt_telefon', 'pos_adedi', 'aylik_ciro', 'website_url'].forEach(id => {
+                            if (document.getElementById(id) && b[id]) document.getElementById(id).value = b[id];
+                        });
+
+                        // Select alanları
+                        if (b.sirket_tipi) document.querySelector(`input[name="sirket_tipi"][value="${b.sirket_tipi}"]`).checked = true;
+                        if (b.odeme_periyodu) document.querySelector(`input[name="odeme_periyodu"][value="${b.odeme_periyodu}"]`).checked = true;
+                        
+                        // İller
+                        if (b.il) {
+                            document.getElementById('il').value = b.il;
+                            await updateIlceler();
+                            if (b.ilce) document.getElementById('ilce').value = b.ilce;
+                        }
+
+                        // Vergi Dairesi
+                        if (b.vergi_dairesi) {
+                            document.getElementById('vergi_dairesi').innerHTML = `<option value="${b.vergi_dairesi}">${b.vergi_dairesi}</option>`;
+                            document.getElementById('vergi_dairesi').value = b.vergi_dairesi;
+                        }
+
+                        // Pos tipleri
+                        if (b.pos_tipi) {
+                            document.querySelectorAll('.urun_tipi_cb').forEach(cb => cb.checked = false);
+                            b.pos_tipi.split(', ').forEach(t => {
+                                const cb = Array.from(document.querySelectorAll('.urun_tipi_cb')).find(c => c.value === t);
+                                if (cb) cb.checked = true;
+                            });
+                            toggleUrunDetaylari();
+                        }
+
+                        // Cihaz Detaylari
+                        if (b.cihaz_detaylari) {
+                            try {
+                                const parsed = JSON.parse(b.cihaz_detaylari);
+                                if (parsed.mulkiyet) {
+                                    document.getElementById('cihaz_mulkiyeti').value = parsed.mulkiyet;
+                                    generateCihazAdresForms();
+                                    parsed.cihazlar.forEach((c, idx) => {
+                                        const i = idx + 1;
+                                        if (document.querySelector(`input[name="cihaz_${i}_seri"]`)) document.querySelector(`input[name="cihaz_${i}_seri"]`).value = c.seri_no || '';
+                                        if (document.getElementById(`cihaz_${i}_il`)) document.getElementById(`cihaz_${i}_il`).value = c.il || '';
+                                        if (document.getElementById(`cihaz_${i}_ilce`)) document.getElementById(`cihaz_${i}_ilce`).innerHTML = `<option value="${c.ilce}">${c.ilce}</option>`;
+                                        if (document.querySelector(`textarea[name="cihaz_${i}_adres"]`)) document.querySelector(`textarea[name="cihaz_${i}_adres"]`).value = c.adres || '';
+                                    });
+                                }
+                            } catch (e) {}
+                        }
+
+                        // Yüklenmiş Dosyalar
+                        if (data.belgeler && data.belgeler.length > 0) {
+                            data.belgeler.forEach(doc => {
+                                const box = document.getElementById('box_' + doc.belge_tipi);
+                                if (box) {
+                                    box.classList.add('uploaded');
+                                    const titleEl = box.querySelector('.upload-title');
+                                    const subtitleEl = box.querySelector('.upload-subtitle');
+                                    if(titleEl) titleEl.innerHTML = '<span style="color:#10b981;">✓ Yüklendi</span> (Değiştirmek için tıklayın)';
+                                    if(subtitleEl) subtitleEl.innerText = doc.orijinal_ad;
+                                }
+                            });
+                        }
+                    }
+                } catch(e) {
+                    console.error("Taslak yüklenemedi", e);
+                }
+            }
+        });
+
+        function openDraftModal() {
+            const email = document.getElementById('email').value;
+            if (!email || !email.includes('@')) {
+                alert('Taslağınızı kaydedebilmemiz için en azından 1. adımdaki E-Posta adresini doldurmuş olmanız gerekmektedir.');
+                return;
+            }
+            document.getElementById('draftModal').style.display = 'flex';
+        }
+
+        function closeDraftModal() {
+            document.getElementById('draftModal').style.display = 'none';
+        }
+
+        async function saveDraft() {
+            const cb = document.getElementById('draftKvkkCheck');
+            if (!cb.checked) {
+                alert('Devam edebilmek için KVKK metnini onaylamanız gerekmektedir.');
+                return;
+            }
+
+            const btn = document.getElementById("btnDraftConfirm");
+            btn.innerHTML = '<span style="animation: pulse 1s infinite;">Kaydediliyor...</span>';
+            btn.disabled = true;
+
+            const form = document.getElementById('posForm');
+            const data = new FormData(form);
+            if (draftToken) data.append('draft_token', draftToken);
+            if (data.has('aylik_ciro')) data.set('aylik_ciro', data.get('aylik_ciro').replace(/,/g, ''));
+
+            belgeler.forEach(b => {
+                data.delete(b.id);
+                if (filesData[b.id]) {
+                    if (Array.isArray(filesData[b.id])) {
+                        filesData[b.id].forEach(f => data.append(b.id, f));
+                    } else {
+                        data.append(b.id, filesData[b.id]);
+                    }
+                }
+            });
+
+            // Cihaz Detaylari
+            const cihazMulti = document.getElementById('cihaz_mulkiyeti').value;
+            const posAdedi = parseInt(document.getElementById('pos_adedi').value) || 0;
+            let cihazDetaylariArray = [];
+            if (posAdedi > 0 && cihazMulti) {
+                for (let i = 1; i <= posAdedi; i++) {
+                    let cihazObj = { index: i };
+                    const seriEl = document.querySelector(`input[name="cihaz_${i}_seri"]`);
+                    const ilEl = document.getElementById(`cihaz_${i}_il`);
+                    const ilceEl = document.getElementById(`cihaz_${i}_ilce`);
+                    const adresEl = document.querySelector(`textarea[name="cihaz_${i}_adres"]`);
+                    if (seriEl) cihazObj.seri_no = seriEl.value;
+                    if (ilEl) cihazObj.il = ilEl.value;
+                    if (ilceEl) cihazObj.ilce = ilceEl.value;
+                    if (adresEl) cihazObj.adres = adresEl.value;
+                    cihazDetaylariArray.push(cihazObj);
+                }
+            }
+            data.append('cihaz_detaylari', JSON.stringify({ mulkiyet: cihazMulti, cihazlar: cihazDetaylariArray }));
+
+            try {
+                const response = await fetch('/api/pos/taslak', { method: 'POST', body: data });
+                const result = await response.json();
+                if (result.success) {
+                    draftToken = result.token;
+                    alert('Taslağınız başarıyla kaydedildi! Devam linkiniz e-posta adresinize gönderildi.');
+                    closeDraftModal();
+                } else {
+                    alert('Hata: ' + result.message);
+                }
+            } catch (e) {
+                alert('Bağlantı hatası oluştu!');
+            }
+            
+            btn.innerText = "Kaydet ve Link Gönder";
+            btn.disabled = false;
+        }
+
     </script>
+
+    <!-- Draft Modal -->
+    <div id="draftModal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; justify-content:center; align-items:center;">
+        <div style="background:#fff; padding:24px; border-radius:8px; width:90%; max-width:400px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
+            <h3 style="margin-top:0; color:var(--primary);">Taslak Olarak Kaydet</h3>
+            <p style="font-size:14px; color:#475569; line-height:1.5;">Başvurunuza daha sonra kaldığınız yerden devam edebilmeniz için şu ana kadar girdiğiniz bilgiler buluta kaydedilecek ve e-posta adresinize bir <strong>devam linki</strong> iletilecektir.</p>
+            <label style="display:flex; align-items:flex-start; gap:8px; font-size:12px; margin-top:16px; color:#334155; line-height:1.4; cursor:pointer;">
+                <input type="checkbox" id="draftKvkkCheck" style="margin-top:2px;">
+                <span>KVKK Aydınlatma Metni kapsamında başvuruma daha sonra devam edebilmem için kişisel verilerimin işlenmesini ve tarafıma hatırlatma iletisi gönderilmesini onaylıyorum.</span>
+            </label>
+            <div style="margin-top:20px; display:flex; justify-content:flex-end; gap:10px;">
+                <button type="button" class="btn btn-outline" onclick="closeDraftModal()" style="padding:8px 16px; font-size:14px;">İptal</button>
+                <button type="button" class="btn btn-primary" id="btnDraftConfirm" onclick="saveDraft()" style="padding:8px 16px; font-size:14px;">Kaydet ve Link Gönder</button>
+            </div>
+        </div>
+    </div>
     <div style="text-align: center; font-size: 13px; color: #888; margin-bottom: 10px; padding: 0 10px;">
         © 2026 Deniz Şara · Bu proje ticari amaç taşımayan bir demo uygulamasıdır. QNBpay markası ve logosu ilgili hak
         sahibine aittir ve yalnızca örnek gösterim amacıyla kullanılmıştır.<br>
