@@ -162,10 +162,17 @@ router.put('/basvuru/:id/durum', authMiddleware, async (req, res) => {
         let extraUpdate = '';
         let extraParams = [];
         let pIndex = 4;
-        if (durum === 'onaylandi' && app.durum !== 'onaylandi') {
+        if ((durum === 'onaylandi' || durum === 'reddedildi') && app.durum !== 'onaylandi' && app.durum !== 'reddedildi') {
             const totalSaat = Math.round((new Date() - new Date(app.basvuru_tarihi)) / 3600000 * 10) / 10;
-            extraUpdate = `, sla_toplam_saat = $${pIndex++}, onaylanma_tarihi = CURRENT_TIMESTAMP`;
+            extraUpdate = `, sla_toplam_saat = $${pIndex++}`;
             extraParams.push(totalSaat);
+            
+            if (durum === 'onaylandi') {
+                extraUpdate += `, onaylanma_tarihi = CURRENT_TIMESTAMP`;
+            } else if (durum === 'reddedildi') {
+                extraUpdate += `, red_eden = $${pIndex++}`;
+                extraParams.push('yonetici');
+            }
         } else if (durum === 'reddedildi') {
             extraUpdate = `, red_eden = $${pIndex++}`;
             extraParams.push('yonetici');

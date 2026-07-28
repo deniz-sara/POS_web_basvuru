@@ -338,10 +338,17 @@ router.post('/teklif-cevapla', async (req, res) => {
         let extraUpdate = '';
         let extraParams = [];
         let pIndex = 4;
-        if (yeniDurum === 'onaylandi') {
+        if ((yeniDurum === 'onaylandi' || yeniDurum === 'reddedildi') && app.durum !== 'onaylandi' && app.durum !== 'reddedildi') {
             const totalSaat = Math.round((new Date() - new Date(app.basvuru_tarihi)) / 3600000 * 10) / 10;
-            extraUpdate = `, sla_toplam_saat = $${pIndex++}, onaylanma_tarihi = CURRENT_TIMESTAMP`;
+            extraUpdate = `, sla_toplam_saat = $${pIndex++}`;
             extraParams.push(totalSaat);
+            
+            if (yeniDurum === 'onaylandi') {
+                extraUpdate += `, onaylanma_tarihi = CURRENT_TIMESTAMP`;
+            } else if (yeniDurum === 'reddedildi') {
+                extraUpdate += `, red_eden = $${pIndex++}`;
+                extraParams.push(redEden);
+            }
         } else if (yeniDurum === 'reddedildi') {
             extraUpdate = `, red_eden = $${pIndex++}`;
             extraParams.push(redEden);
