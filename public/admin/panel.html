@@ -1319,7 +1319,6 @@
             if (!data || !data.success) return alert('Veri alınamadı');
 
             const b = data.basvuru;
-            console.log('[DEBUG] Modal açıldı. pos_tipi:', b.pos_tipi, '| belgeler sayısı:', data.belgeler?.length, '| cihaz_detaylari:', b.cihaz_detaylari);
             document.getElementById('m_basvuru_no').innerText = b.basvuru_no;
             document.getElementById('m_firma').innerText = b.firma_unvani;
             document.getElementById('m_tcno').innerText = b.tc_no || 'Belirtilmedi';
