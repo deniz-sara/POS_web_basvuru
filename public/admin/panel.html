@@ -1050,7 +1050,7 @@
                 document.getElementById('statsGrid').innerHTML = `
                     <div class="stat-card" onclick="filterByDurum('')"><div class="title">Toplam</div><div class="value">${stats.toplam}</div></div>
                     <div class="stat-card" style="border-left-color: var(--info)" onclick="filterByBugun()"><div class="title">Bugün</div><div class="value">${stats.bugun}</div></div>
-                    <div class="stat-card" style="border-left-color: var(--secondary)" onclick="filterByDurum('alindi')"><div class="title">Alınanlar</div><div class="value">${stats.durumlar.find(d => d.durum === 'alindi')?.count || 0}</div></div>
+                    <div class="stat-card" style="border-left-color: var(--secondary)" onclick="filterByDurum('alindi')"><div class="title">Yeni Başvuru</div><div class="value">${stats.durumlar.find(d => d.durum === 'alindi')?.count || 0}</div></div>
                     <div class="stat-card" style="border-left-color: var(--warning)" onclick="filterByDurum('inceleme')"><div class="title">İnceleme</div><div class="value">${stats.durumlar.find(d => d.durum === 'inceleme')?.count || 0}</div></div>
                     <div class="stat-card" style="border-left-color: var(--error)" onclick="filterByDurum('ek_bilgi')"><div class="title">Evrak Bek.</div><div class="value">${eksikCount}</div></div>
                     <div class="stat-card" style="border-left-color: #3730a3" onclick="filterByDurum('teklif_bekleniyor')"><div class="title">Teklif Bek.</div><div class="value">${teklifCount}</div></div>

@@ -14,6 +14,27 @@
             border-top: 1px solid var(--border);
         }
 
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #onay-box, #onay-box * {
+                visibility: visible;
+            }
+            #onay-box {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                border: none;
+                margin: 0;
+                padding: 0;
+            }
+            button, .btn {
+                display: none !important;
+            }
+        }
+
         .tracker-grid {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
@@ -347,14 +368,24 @@
                     onayBox.style.display = 'block';
                     
                     if (b.teklif_detayi) {
+                        let ratesHtml = '';
+                        if(b.teklif_detayi.tek_cekim) {
+                            ratesHtml += `<tr><td style="padding:8px 0; border-bottom:1px solid #e2e8f0; color:#64748b;">Tek Çekim:</td><td style="padding:8px 0; border-bottom:1px solid #e2e8f0; font-weight:600;">%${b.teklif_detayi.tek_cekim}</td></tr>`;
+                        }
+                        for(let i=2; i<=12; i++) {
+                            if(b.teklif_detayi['taksit_'+i]) {
+                                ratesHtml += `<tr><td style="padding:8px 0; border-bottom:1px solid #e2e8f0; color:#64748b;">${i} Taksit:</td><td style="padding:8px 0; border-bottom:1px solid #e2e8f0; font-weight:600;">%${b.teklif_detayi['taksit_'+i]}</td></tr>`;
+                            }
+                        }
+                        
                         teklifDetayDiv.innerHTML = `
                             <h4 style="margin-bottom:10px; color:#1e293b;">Kabul Edilen Fiyat Teklifi</h4>
+                            <div style="margin-bottom: 10px; padding-bottom: 10px; border-bottom: 2px solid #e2e8f0;">
+                                <strong style="color:var(--primary);">Firma:</strong> ${b.firma_unvani} <br>
+                                <strong style="color:var(--primary);">Ödeme Periyodu:</strong> ${b.teklif_detayi.teklif_periyodu || b.odeme_periyodu || '-'}
+                            </div>
                             <table style="width:100%; border-collapse:collapse; text-align:left; font-size:14px;">
-                                <tr><td style="padding:8px 0; border-bottom:1px solid #e2e8f0; color:#64748b;">Paket Adı:</td><td style="padding:8px 0; border-bottom:1px solid #e2e8f0; font-weight:600;">${b.teklif_detayi.paket_adi || '-'}</td></tr>
-                                <tr><td style="padding:8px 0; border-bottom:1px solid #e2e8f0; color:#64748b;">Ödeme Periyodu:</td><td style="padding:8px 0; border-bottom:1px solid #e2e8f0; font-weight:600;">${b.teklif_detayi.teklif_periyodu || b.odeme_periyodu || '-'}</td></tr>
-                                <tr><td style="padding:8px 0; border-bottom:1px solid #e2e8f0; color:#64748b;">Komisyon Oranı:</td><td style="padding:8px 0; border-bottom:1px solid #e2e8f0; font-weight:600;">%${b.teklif_detayi.komisyon_orani || '0'}</td></tr>
-                                <tr><td style="padding:8px 0; border-bottom:1px solid #e2e8f0; color:#64748b;">Sabit Ücret:</td><td style="padding:8px 0; border-bottom:1px solid #e2e8f0; font-weight:600;">${b.teklif_detayi.sabit_ucret || '0'} TL</td></tr>
-                                <tr><td style="padding:8px 0; color:#64748b;">Kurulum Ücreti:</td><td style="padding:8px 0; font-weight:600;">${b.teklif_detayi.kurulum_ucreti || '0'} TL</td></tr>
+                                ${ratesHtml}
                             </table>
                         `;
                     } else {
