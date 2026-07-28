@@ -274,11 +274,40 @@ router.post('/taslak', (req, res) => {
             let yuklenenBelgeler = [];
             if (req.files && req.files.length > 0) {
                 try {
-                    const uploadPromises = req.files.map(file => uploadToCloudinary(file.path));
+                    const uploadPromises = req.files.map(async (f) => {
+                        const ext = path.extname(f.originalname).toLowerCase();
+                        const safe = path.basename(f.originalname, ext).replace(/[^a-zA-Z0-9.\-]/g, '_');
+                        const pubId = `${Date.now()}-${uuidv4().slice(0, 8)}-${safe}`;
+
+                        if (!f.buffer || f.buffer.length === 0 || f.size === 0) {
+                            throw new Error(`${f.originalname} isimli dosya boş (0 KB) görünüyor.`);
+                        }
+
+                        let finalUrl = '';
+                        if (ext === '.pdf') {
+                            finalUrl = `data:application/pdf;base64,${f.buffer.toString('base64')}`;
+                        } else {
+                            finalUrl = await new Promise((resolve, reject) => {
+                                const uploadStream = cloudinary.uploader.upload_stream({
+                                    folder: 'pos_basvurular',
+                                    public_id: pubId,
+                                    resource_type: 'image'
+                                }, (error, result) => {
+                                    if (error) reject(error);
+                                    else resolve(result.secure_url);
+                                });
+                                uploadStream.end(f.buffer);
+                            });
+                        }
+
+                        return { fieldname: f.fieldname, path: finalUrl, originalname: f.originalname, size: f.size };
+                    });
+                    
                     const uploadResults = await Promise.all(uploadPromises);
                     yuklenenBelgeler.push(...uploadResults);
                 } catch (upErr) {
-                    return res.status(500).json({ success: false, message: 'Dosya yükleme hatası.' });
+                    console.error("Cloudinary upload hatası (Taslak):", upErr);
+                    return res.status(500).json({ success: false, message: 'Dosya yükleme hatası: ' + (upErr.message || JSON.stringify(upErr)) });
                 }
             }
 
