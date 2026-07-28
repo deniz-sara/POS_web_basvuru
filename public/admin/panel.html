@@ -1839,6 +1839,16 @@
 
         async function sendTeklif() {
             if(!currentActiveId) return;
+
+            const currentStatus = document.getElementById('m_durum_select').value;
+            if (currentStatus === 'teklif_bekleniyor') {
+                alert('Bu başvuru için zaten bir teklif iletilmiş ve müşterinin yanıtı bekleniyor. Mevcut teklif yanıtlanana kadar yeni bir teklif iletemezsiniz.');
+                return;
+            }
+
+            if (!confirm('Bu teklifi müşteriye iletmek istediğinize emin misiniz?')) {
+                return;
+            }
             
             const odeme_periyodu = document.getElementById('m_teklif_periyot').value;
             const aciklama = document.getElementById('m_teklif_not').value;
