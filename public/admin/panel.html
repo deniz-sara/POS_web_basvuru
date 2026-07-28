@@ -294,8 +294,8 @@
 
         .modal {
             background: var(--surface);
-            width: 90%;
-            max-width: 900px;
+            width: 95%;
+            max-width: 1000px;
             max-height: 90vh;
             border-radius: 12px;
             display: flex;
@@ -777,11 +777,10 @@
                     <div class="detail-section">
                         <h4>SLA Geçmişi</h4>
                         <div id="m_sla_history" style="font-size: 13px; background: #f9fafb; padding: 10px; border-radius: 6px; border: 1px solid var(--border);"></div>
-                    <div class="detail-section">
-                        <h4>SLA Geçmişi</h4>
-                        <div id="m_sla_history" style="font-size: 13px; background: #f9fafb; padding: 10px; border-radius: 6px; border: 1px solid var(--border);"></div>
                     </div>
                 </div>
+
+                <div class="modal-right">
 
                 <div class="modal-right">
                     <div class="action-box">
@@ -789,7 +788,7 @@
                         <select id="m_paket_select" onchange="autoFillPaket()" style="width:100%;padding:8px;margin-bottom:10px;border-radius:4px;border:1px solid #ccc">
                             <option value="">Paket Seçiniz (Otomatik Doldurur)</option>
                         </select>
-                        <select id="m_teklif_periyot" style="width:100%;padding:8px;margin-bottom:10px;border-radius:4px;border:1px solid #ccc">
+                        <select id="m_teklif_periyot" disabled style="width:100%;padding:8px;margin-bottom:10px;border-radius:4px;border:1px solid #ccc;background:#f5f5f5;">
                             <option value="Ertesi Gün">Ertesi Gün</option>
                             <option value="7 Gün">7 Gün</option>
                             <option value="14 Gün">14 Gün</option>
@@ -797,18 +796,18 @@
                             <option value="Salt Bloke">Salt Bloke</option>
                         </select>
                         <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:10px;font-size:12px;">
-                            <input type="number" step="0.01" id="t_1" placeholder="Tek Çekim %">
-                            <input type="number" step="0.01" id="t_2" placeholder="2 Taksit %">
-                            <input type="number" step="0.01" id="t_3" placeholder="3 Taksit %">
-                            <input type="number" step="0.01" id="t_4" placeholder="4 Taksit %">
-                            <input type="number" step="0.01" id="t_5" placeholder="5 Taksit %">
-                            <input type="number" step="0.01" id="t_6" placeholder="6 Taksit %">
-                            <input type="number" step="0.01" id="t_7" placeholder="7 Taksit %">
-                            <input type="number" step="0.01" id="t_8" placeholder="8 Taksit %">
-                            <input type="number" step="0.01" id="t_9" placeholder="9 Taksit %">
-                            <input type="number" step="0.01" id="t_10" placeholder="10 Taksit %">
-                            <input type="number" step="0.01" id="t_11" placeholder="11 Taksit %">
-                            <input type="number" step="0.01" id="t_12" placeholder="12 Taksit %">
+                            <input type="number" step="0.01" id="t_1" placeholder="Tek Çekim %" disabled style="background:#f5f5f5;border:1px solid #ccc;border-radius:4px;padding:4px;">
+                            <input type="number" step="0.01" id="t_2" placeholder="2 Taksit %" disabled style="background:#f5f5f5;border:1px solid #ccc;border-radius:4px;padding:4px;">
+                            <input type="number" step="0.01" id="t_3" placeholder="3 Taksit %" disabled style="background:#f5f5f5;border:1px solid #ccc;border-radius:4px;padding:4px;">
+                            <input type="number" step="0.01" id="t_4" placeholder="4 Taksit %" disabled style="background:#f5f5f5;border:1px solid #ccc;border-radius:4px;padding:4px;">
+                            <input type="number" step="0.01" id="t_5" placeholder="5 Taksit %" disabled style="background:#f5f5f5;border:1px solid #ccc;border-radius:4px;padding:4px;">
+                            <input type="number" step="0.01" id="t_6" placeholder="6 Taksit %" disabled style="background:#f5f5f5;border:1px solid #ccc;border-radius:4px;padding:4px;">
+                            <input type="number" step="0.01" id="t_7" placeholder="7 Taksit %" disabled style="background:#f5f5f5;border:1px solid #ccc;border-radius:4px;padding:4px;">
+                            <input type="number" step="0.01" id="t_8" placeholder="8 Taksit %" disabled style="background:#f5f5f5;border:1px solid #ccc;border-radius:4px;padding:4px;">
+                            <input type="number" step="0.01" id="t_9" placeholder="9 Taksit %" disabled style="background:#f5f5f5;border:1px solid #ccc;border-radius:4px;padding:4px;">
+                            <input type="number" step="0.01" id="t_10" placeholder="10 Taksit %" disabled style="background:#f5f5f5;border:1px solid #ccc;border-radius:4px;padding:4px;">
+                            <input type="number" step="0.01" id="t_11" placeholder="11 Taksit %" disabled style="background:#f5f5f5;border:1px solid #ccc;border-radius:4px;padding:4px;">
+                            <input type="number" step="0.01" id="t_12" placeholder="12 Taksit %" disabled style="background:#f5f5f5;border:1px solid #ccc;border-radius:4px;padding:4px;">
                         </div>
                         <textarea id="m_teklif_not" placeholder="Müşteriye özel not (Opsiyonel)" style="width:100%;padding:8px;margin-bottom:10px;border-radius:4px;border:1px solid #ccc;resize:vertical;" rows="2"></textarea>
                         <button class="btn btn-outline" style="width:100%;background:var(--secondary);color:white;border-color:var(--secondary)" onclick="sendTeklif()">Teklifi İlet</button>
@@ -1317,6 +1316,18 @@
                     console.error("Cihaz JSON parse hatasi", e);
                 }
             }
+
+            // Fiyat Teklifi Update (Paket Filtreleme)
+            const selectPaket = document.getElementById('m_paket_select');
+            selectPaket.innerHTML = '<option value="">Paket Seçiniz (Otomatik Doldurur)</option>';
+            paketlerList.forEach(p => {
+                if (!b.odeme_periyodu || p.odeme_periyodu === b.odeme_periyodu) {
+                    selectPaket.innerHTML += `<option value="${p.id}">${p.paket_adi} (${p.odeme_periyodu})</option>`;
+                }
+            });
+            document.getElementById('m_teklif_periyot').value = b.odeme_periyodu || 'Ertesi Gün';
+            for(let i=1; i<=12; i++) document.getElementById('t_'+i).value = '';
+            document.getElementById('m_teklif_not').value = '';
 
             // Durum update
             const selectEl = document.getElementById('m_durum_select');
