@@ -166,6 +166,11 @@ const templates = {
         </div>
       </div>
     `
+  }),
+
+  custom: (data) => ({
+    subject: data.subject,
+    html: data.html
   })
 };
 
