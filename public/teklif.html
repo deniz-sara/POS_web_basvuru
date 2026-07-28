@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QNBpay - Fiyat Teklifi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #001b59;
+            --secondary: #904999;
+            --bg: #F3F4F6;
+            --surface: #FFFFFF;
+            --text: #1F2937;
+            --border: #E5E7EB;
+            --error: #EF4444;
+            --success: #10B981;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background: var(--surface);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            width: 100%;
+            max-width: 600px;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .logo {
+            height: 40px;
+            margin-bottom: 30px;
+        }
+
+        h2 {
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        p {
+            color: #4B5563;
+            margin-bottom: 25px;
+            font-size: 15px;
+            line-height: 1.5;
+        }
+
+        .offer-box {
+            background: #F9FAFB;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+            text-align: left;
+        }
+
+        .offer-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .offer-row:last-child {
+            border-bottom: none;
+        }
+
+        .offer-label {
+            font-weight: 500;
+            color: #6B7280;
+        }
+
+        .offer-val {
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            text-align: center;
+        }
+
+        .btn-accept {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-accept:hover {
+            background: #059669;
+        }
+
+        .btn-reject {
+            background: var(--surface);
+            color: var(--error);
+            border: 1px solid var(--error);
+        }
+
+        .btn-reject:hover {
+            background: #FEF2F2;
+        }
+
+        .loading {
+            display: none;
+            margin-top: 20px;
+            font-weight: 500;
+            color: var(--secondary);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+
+        .message-box {
+            display: none;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-weight: 600;
+        }
+
+        .message-box.success {
+            background: #ECFDF5;
+            color: #065F46;
+            border: 1px solid #A7F3D0;
+        }
+
+        .message-box.error {
+            background: #FEF2F2;
+            color: #991B1B;
+            border: 1px solid #FECACA;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="mainContainer">
+        <img src="qnbpay-logo.webp" alt="QNBpay Logo" class="logo">
+        <h2>Size Özel Fiyat Teklifi</h2>
+        <p id="descText">Yükleniyor...</p>
+        
+        <div class="offer-box" id="offerBox" style="display:none;">
+            <div class="offer-row">
+                <span class="offer-label">Firma Unvanı</span>
+                <span class="offer-val" id="valFirma">-</span>
+            </div>
+            <div class="offer-row">
+                <span class="offer-label">Başvuru No</span>
+                <span class="offer-val" id="valNo">-</span>
+            </div>
+            <div class="offer-row">
+                <span class="offer-label">Ödeme Periyodu</span>
+                <span class="offer-val" id="valPeriyot" style="color:var(--secondary)">-</span>
+            </div>
+            <div id="ratesContainer"></div>
+        </div>
+
+        <div class="btn-group" id="btnGroup" style="display:none;">
+            <button class="btn btn-reject" onclick="cevapla('red')">Teklifi Reddet</button>
+            <button class="btn btn-accept" onclick="cevapla('kabul')">Teklifi Kabul Et</button>
+        </div>
+
+        <div id="loading" class="loading">İşleminiz gerçekleştiriliyor, lütfen bekleyin...</div>
+        <div id="messageBox" class="message-box"></div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+
+        if (!token) {
+            showError("Geçersiz veya eksik link.");
+        } else {
+            fetchOffer();
+        }
+
+        async function fetchOffer() {
+            try {
+                const response = await fetch(`/api/pos/teklif?token=${token}`);
+                const data = await response.json();
+
+                if (!data.success) {
+                    showError(data.message || 'Teklif bilgisi alınamadı.');
+                    return;
+                }
+
+                const basvuru = data.basvuru;
+                
+                if (basvuru.teklif_durumu === 'kabul_edildi') {
+                    showSuccess("Bu teklif daha önce kabul edilmiştir. İlginiz için teşekkür ederiz.");
+                    return;
+                } else if (basvuru.teklif_durumu === 'reddedildi') {
+                    showError("Bu teklif daha önce reddedilmiştir.");
+                    return;
+                } else if (basvuru.teklif_durumu !== 'bekliyor') {
+                    showError("Aktif bir teklif bulunmamaktadır.");
+                    return;
+                }
+
+                // Render Offer
+                document.getElementById('descText').innerText = "Firmanız için belirlenen komisyon oranları aşağıdadır. Lütfen inceleyip kararınızı belirtin.";
+                document.getElementById('valFirma').innerText = basvuru.firma_unvani;
+                document.getElementById('valNo').innerText = basvuru.basvuru_no;
+                document.getElementById('valPeriyot').innerText = basvuru.odeme_periyodu || 'Belirtilmedi';
+
+                let ratesHtml = '';
+                if (basvuru.teklif_detayi) {
+                    try {
+                        const rates = JSON.parse(basvuru.teklif_detayi);
+                        if(rates.tek_cekim) ratesHtml += `<div class="offer-row"><span class="offer-label">Tek Çekim</span><span class="offer-val">%${rates.tek_cekim}</span></div>`;
+                        for(let i=2; i<=12; i++) {
+                            if(rates['taksit_'+i]) {
+                                ratesHtml += `<div class="offer-row"><span class="offer-label">${i} Taksit</span><span class="offer-val">%${rates['taksit_'+i]}</span></div>`;
+                            }
+                        }
+                    } catch(e) {}
+                }
+                document.getElementById('ratesContainer').innerHTML = ratesHtml;
+
+                document.getElementById('offerBox').style.display = 'block';
+                document.getElementById('btnGroup').style.display = 'flex';
+
+            } catch (err) {
+                showError("Bağlantı hatası oluştu.");
+            }
+        }
+
+        async function cevapla(cevap) {
+            if (cevap === 'red') {
+                if (!confirm("Fiyat teklifini reddetmek istediğinize emin misiniz? Başvurunuz reddedildi olarak işaretlenecektir.")) return;
+            } else {
+                if (!confirm("Fiyat teklifini onaylıyor musunuz? Başvurunuz onay sürecine alınacaktır.")) return;
+            }
+
+            document.getElementById('btnGroup').style.display = 'none';
+            document.getElementById('loading').style.display = 'block';
+
+            try {
+                const response = await fetch('/api/pos/teklif-cevapla', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token, cevap })
+                });
+
+                const data = await response.json();
+                document.getElementById('loading').style.display = 'none';
+
+                if (data.success) {
+                    if (cevap === 'kabul') {
+                        showSuccess("Teklif başarıyla kabul edildi. Başvurunuz onaylanmıştır. Çalışma detaylarınız e-posta adresinize iletilecektir.");
+                    } else {
+                        showError("Teklif reddedildi. Başvuru süreci iptal edilmiştir.");
+                    }
+                } else {
+                    showError(data.message || 'Bir hata oluştu.');
+                    document.getElementById('btnGroup').style.display = 'flex';
+                }
+            } catch (err) {
+                document.getElementById('loading').style.display = 'none';
+                showError("Bağlantı hatası oluştu.");
+                document.getElementById('btnGroup').style.display = 'flex';
+            }
+        }
+
+        function showError(msg) {
+            document.getElementById('descText').style.display = 'none';
+            document.getElementById('offerBox').style.display = 'none';
+            document.getElementById('btnGroup').style.display = 'none';
+            const mb = document.getElementById('messageBox');
+            mb.className = 'message-box error';
+            mb.innerText = msg;
+            mb.style.display = 'block';
+        }
+
+        function showSuccess(msg) {
+            document.getElementById('descText').style.display = 'none';
+            document.getElementById('offerBox').style.display = 'none';
+            document.getElementById('btnGroup').style.display = 'none';
+            const mb = document.getElementById('messageBox');
+            mb.className = 'message-box success';
+            mb.innerText = msg;
+            mb.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

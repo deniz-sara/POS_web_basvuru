@@ -72,11 +72,11 @@ router.post('/basvuru', (req, res) => {
                 firma_unvani, tabela_adi, sirket_tipi, tc_no, vergi_no, vergi_dairesi,
                 faaliyet_alani, adres, il, ilce,
                 yetkili_ad_soyad, telefon, email, alt_telefon,
-                pos_adedi, pos_tipi, aylik_ciro, cihaz_detaylari, website_url
+                pos_adedi, pos_tipi, aylik_ciro, cihaz_detaylari, website_url, odeme_periyodu
             } = req.body;
 
             // Zorunlu alan validasyonu
-            const zorunlu = { firma_unvani, sirket_tipi, tc_no, vergi_no, vergi_dairesi, faaliyet_alani, adres, il, ilce, yetkili_ad_soyad, telefon, email, pos_tipi, aylik_ciro };
+            const zorunlu = { firma_unvani, sirket_tipi, tc_no, vergi_no, vergi_dairesi, faaliyet_alani, adres, il, ilce, yetkili_ad_soyad, telefon, email, pos_tipi, aylik_ciro, odeme_periyodu };
             if (pos_tipi && pos_tipi.includes('Fiziki POS')) {
                 zorunlu.pos_adedi = pos_adedi;
             }
@@ -182,13 +182,13 @@ router.post('/basvuru', (req, res) => {
             const stmt = `
       INSERT INTO applications (basvuru_no, token, firma_unvani, tabela_adi, sirket_tipi, tc_no, vergi_no, vergi_dairesi, ticaret_sicil_no,
         faaliyet_alani, adres, il, ilce, yetkili_ad_soyad, telefon, email, alt_telefon,
-        pos_adedi, pos_tipi, aylik_ciro, cihaz_detaylari, ort_islem_tutari, website_url)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
+        pos_adedi, pos_tipi, aylik_ciro, cihaz_detaylari, ort_islem_tutari, website_url, odeme_periyodu)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
       RETURNING id
     `;
             const result = await db.query(stmt, [basvuruNo, token, firma_unvani, tabela_adi || '', sirket_tipi, tc_no, vergi_no, vergi_dairesi, '',
                 faaliyet_alani, adres, il, ilce, yetkili_ad_soyad, telefon, email, alt_telefon || null,
-                parseInt(pos_adedi) || 0, pos_tipi, parseFloat(aylik_ciro), cihaz_detaylari || null, 0, website_url || null]);
+                parseInt(pos_adedi) || 0, pos_tipi, parseFloat(aylik_ciro), cihaz_detaylari || null, 0, website_url || null, odeme_periyodu]);
 
             const applicationId = result.rows[0].id;
 
@@ -268,7 +268,8 @@ router.get('/durum/:token', async (req, res) => {
                 eksik_belgeler: eksikDocs,
                 upload_token: uploadToken,
                 pos_adedi: app.pos_adedi,
-                pos_tipi: app.pos_tipi
+                pos_tipi: app.pos_tipi,
+                odeme_periyodu: app.odeme_periyodu
             }
         });
     } catch (err) {
@@ -297,6 +298,71 @@ router.post('/sorgula', async (req, res) => {
     } catch (err) {
         console.error('Sorgulama hatası:', err);
         res.status(500).json({ success: false, message: 'Sunucu hatası oluştu.' });
+    }
+});
+
+// GET /api/pos/teklif - Müşteriye teklifi göster
+router.get('/teklif', async (req, res) => {
+    try {
+        const { token } = req.query;
+        if (!token) return res.status(400).json({ success: false, message: 'Token gerekli.' });
+
+        const appRes = await db.query('SELECT id, basvuru_no, firma_unvani, durum, teklif_durumu, teklif_detayi, odeme_periyodu FROM applications WHERE token = $1', [token]);
+        if (appRes.rows.length === 0) return res.status(404).json({ success: false, message: 'Başvuru bulunamadı.' });
+
+        res.json({ success: true, basvuru: appRes.rows[0] });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Sunucu hatası' });
+    }
+});
+
+// POST /api/pos/teklif-cevapla - Müşteri teklifi kabul veya reddeder
+router.post('/teklif-cevapla', async (req, res) => {
+    try {
+        const { token, cevap } = req.body;
+        if (!token || !cevap) return res.status(400).json({ success: false, message: 'Eksik parametre.' });
+
+        const appRes = await db.query('SELECT * FROM applications WHERE token = $1', [token]);
+        const app = appRes.rows[0];
+        if (!app) return res.status(404).json({ success: false, message: 'Başvuru bulunamadı.' });
+
+        if (app.teklif_durumu === 'kabul_edildi' || app.teklif_durumu === 'reddedildi') {
+            return res.status(400).json({ success: false, message: 'Bu teklife zaten cevap verilmiş.' });
+        }
+
+        const yeniDurum = (cevap === 'kabul') ? 'onaylandi' : 'reddedildi';
+        const yeniTeklifDurum = (cevap === 'kabul') ? 'kabul_edildi' : 'reddedildi';
+        const redEden = (cevap === 'red') ? 'kullanici' : null;
+
+        let extraUpdate = '';
+        let extraParams = [];
+        let pIndex = 4;
+        if (yeniDurum === 'onaylandi') {
+            const totalSaat = Math.round((new Date() - new Date(app.basvuru_tarihi)) / 3600000 * 10) / 10;
+            extraUpdate = \`, sla_toplam_saat = $\${pIndex++}, onaylanma_tarihi = CURRENT_TIMESTAMP\`;
+            extraParams.push(totalSaat);
+        } else if (yeniDurum === 'reddedildi') {
+            extraUpdate = \`, red_eden = $\${pIndex++}\`;
+            extraParams.push(redEden);
+        }
+
+        await db.query(\`UPDATE applications SET durum = $1, teklif_durumu = $2, guncelleme_tarihi = CURRENT_TIMESTAMP\${extraUpdate} WHERE id = $3\`, [yeniDurum, yeniTeklifDurum, app.id, ...extraParams]);
+
+        // SLA Update
+        const activeHistoryRes = await db.query('SELECT id, baslangic_tarihi FROM status_history WHERE application_id = $1 AND bitis_tarihi IS NULL ORDER BY id DESC LIMIT 1', [app.id]);
+        const activeHistory = activeHistoryRes.rows[0];
+        if (activeHistory) {
+            const baslangic = new Date(activeHistory.baslangic_tarihi);
+            const simdi = new Date();
+            const gecenDakika = Math.round((simdi - baslangic) / 60000);
+            await db.query('UPDATE status_history SET bitis_tarihi = CURRENT_TIMESTAMP, gecen_sure_dk = $1 WHERE id = $2', [gecenDakika, activeHistory.id]);
+        }
+        await db.query('INSERT INTO status_history (application_id, durum) VALUES ($1, $2)', [app.id, yeniDurum]);
+
+        res.json({ success: true, message: 'Cevabınız kaydedildi.' });
+
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Sunucu hatası' });
     }
 });
 

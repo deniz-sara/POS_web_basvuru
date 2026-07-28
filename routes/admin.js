@@ -25,6 +25,7 @@ const DURUM_LABELS = {
     alindi: 'Başvuru Alındı',
     inceleme: 'Evrak İnceleme',
     degerlendirme: 'Değerlendirmede',
+    teklif_bekleniyor: 'Teklif İletildi (Müşteri Onayı)',
     onaylandi: 'Onaylandı',
     reddedildi: 'Reddedildi',
     ek_bilgi: 'Ek Bilgi / Evrak Bekleniyor'
@@ -162,6 +163,9 @@ router.put('/basvuru/:id/durum', authMiddleware, async (req, res) => {
             const totalSaat = Math.round((new Date() - new Date(app.basvuru_tarihi)) / 3600000 * 10) / 10;
             extraUpdate = `, sla_toplam_saat = $${pIndex++}, onaylanma_tarihi = CURRENT_TIMESTAMP`;
             extraParams.push(totalSaat);
+        } else if (durum === 'reddedildi') {
+            extraUpdate = `, red_eden = $${pIndex++}`;
+            extraParams.push('yonetici');
         }
 
         await db.query(`UPDATE applications SET durum = $1, durum_aciklama = $2, guncelleme_tarihi = CURRENT_TIMESTAMP${extraUpdate} WHERE id = $3`, [durum, aciklama || null, app.id, ...extraParams]);
@@ -178,6 +182,57 @@ router.put('/basvuru/:id/durum', authMiddleware, async (req, res) => {
 
         res.json({ success: true, message: 'Durum güncellendi.' });
     } catch (err) {
+        res.status(500).json({ success: false, message: 'Sunucu hatası' });
+    }
+});
+
+// PUT /api/admin/basvuru/:id/teklif-ilet - Fiyat Teklifi İlet
+router.put('/basvuru/:id/teklif-ilet', authMiddleware, async (req, res) => {
+    try {
+        const { odeme_periyodu, teklif_detayi, aciklama } = req.body;
+        const appRes = await db.query('SELECT * FROM applications WHERE id = $1', [req.params.id]);
+        const app = appRes.rows[0];
+        if (!app) return res.status(404).json({ success: false, message: 'Başvuru bulunamadı.' });
+
+        // SLA Update (to close current timer for history)
+        const durum = 'teklif_bekleniyor';
+        if (app.durum !== durum) {
+            const activeHistoryRes = await db.query('SELECT id, baslangic_tarihi FROM status_history WHERE application_id = $1 AND bitis_tarihi IS NULL ORDER BY id DESC LIMIT 1', [app.id]);
+            const activeHistory = activeHistoryRes.rows[0];
+            if (activeHistory) {
+                const baslangic = new Date(activeHistory.baslangic_tarihi);
+                const simdi = new Date();
+                const gecenDakika = Math.round((simdi - baslangic) / 60000);
+                await db.query('UPDATE status_history SET bitis_tarihi = CURRENT_TIMESTAMP, gecen_sure_dk = $1 WHERE id = $2', [gecenDakika, activeHistory.id]);
+            }
+            await db.query('INSERT INTO status_history (application_id, durum) VALUES ($1, $2)', [app.id, durum]);
+        }
+
+        await db.query(`
+            UPDATE applications 
+            SET durum = $1, durum_aciklama = $2, teklif_durumu = 'bekliyor', teklif_detayi = $3, odeme_periyodu = $4, guncelleme_tarihi = CURRENT_TIMESTAMP 
+            WHERE id = $5
+        `, [durum, aciklama || null, JSON.stringify(teklif_detayi), odeme_periyodu, app.id]);
+
+        await db.query(`INSERT INTO admin_logs (admin_id, islem_tipi, basvuru_id, detay) VALUES ($1, $2, $3, $4)`,
+            [req.admin.id, 'Fiyat Teklifi', app.id, `Ödeme periyodu: ${odeme_periyodu} olarak teklif iletildi. ${aciklama ? 'Not: ' + aciklama : ''}`]);
+
+        // Email Data
+        const emailData = {
+            basvuru_no: app.basvuru_no,
+            yetkili_ad_soyad: app.yetkili_ad_soyad,
+            odeme_periyodu: odeme_periyodu,
+            teklif_detayi: teklif_detayi,
+            aciklama: aciklama,
+            teklif_linki: `${process.env.BASE_URL || process.env.RENDER_EXTERNAL_URL || 'http://localhost:3000'}/pos/teklif.html?token=${app.token}`
+        };
+
+        sendEmail(app.email, 'teklifIletildi', emailData);
+        sendSMS(app.telefon, smsTemplates.durumGuncellendi(app.basvuru_no, DURUM_LABELS[durum]));
+
+        res.json({ success: true, message: 'Fiyat teklifi müşteriye iletildi.' });
+    } catch (err) {
+        console.error("Teklif iletme hatası:", err);
         res.status(500).json({ success: false, message: 'Sunucu hatası' });
     }
 });
@@ -281,6 +336,7 @@ router.get('/export', authMiddleware, async (req, res) => {
             alindi: 'Başvuru Alındı',
             inceleme: 'Evrak İnceleme',
             degerlendirme: 'Değerlendirme',
+            teklif_bekleniyor: 'Teklif Bekleniyor',
             ek_bilgi: 'Evrak Bekleniyor',
             onaylandi: 'Onaylandı',
             reddedildi: 'Reddedildi'
@@ -599,6 +655,57 @@ router.get('/db-size', authMiddleware, async (req, res) => {
             percent: percent,
             cloudinary: cloudInfo
         });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Sunucu hatası' });
+    }
+});
+
+// --- Paket Yönetimi ---
+
+// GET /api/admin/paketler
+router.get('/paketler', authMiddleware, async (req, res) => {
+    try {
+        const result = await db.query('SELECT * FROM packages ORDER BY id ASC');
+        res.json({ success: true, data: result.rows });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Sunucu hatası' });
+    }
+});
+
+// POST /api/admin/paket
+router.post('/paket', authMiddleware, async (req, res) => {
+    try {
+        const { paket_adi, odeme_periyodu, tek_cekim, taksit_2, taksit_3, taksit_4, taksit_5, taksit_6, taksit_7, taksit_8, taksit_9, taksit_10, taksit_11, taksit_12 } = req.body;
+        await db.query(`
+            INSERT INTO packages (paket_adi, odeme_periyodu, tek_cekim, taksit_2, taksit_3, taksit_4, taksit_5, taksit_6, taksit_7, taksit_8, taksit_9, taksit_10, taksit_11, taksit_12) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+        `, [paket_adi, odeme_periyodu, tek_cekim||null, taksit_2||null, taksit_3||null, taksit_4||null, taksit_5||null, taksit_6||null, taksit_7||null, taksit_8||null, taksit_9||null, taksit_10||null, taksit_11||null, taksit_12||null]);
+        res.json({ success: true, message: 'Paket eklendi.' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Sunucu hatası' });
+    }
+});
+
+// PUT /api/admin/paket/:id
+router.put('/paket/:id', authMiddleware, async (req, res) => {
+    try {
+        const { paket_adi, odeme_periyodu, tek_cekim, taksit_2, taksit_3, taksit_4, taksit_5, taksit_6, taksit_7, taksit_8, taksit_9, taksit_10, taksit_11, taksit_12 } = req.body;
+        await db.query(`
+            UPDATE packages 
+            SET paket_adi=$1, odeme_periyodu=$2, tek_cekim=$3, taksit_2=$4, taksit_3=$5, taksit_4=$6, taksit_5=$7, taksit_6=$8, taksit_7=$9, taksit_8=$10, taksit_9=$11, taksit_10=$12, taksit_11=$13, taksit_12=$14, guncelleme_tarihi=CURRENT_TIMESTAMP
+            WHERE id=$15
+        `, [paket_adi, odeme_periyodu, tek_cekim||null, taksit_2||null, taksit_3||null, taksit_4||null, taksit_5||null, taksit_6||null, taksit_7||null, taksit_8||null, taksit_9||null, taksit_10||null, taksit_11||null, taksit_12||null, req.params.id]);
+        res.json({ success: true, message: 'Paket güncellendi.' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Sunucu hatası' });
+    }
+});
+
+// DELETE /api/admin/paket/:id
+router.delete('/paket/:id', authMiddleware, async (req, res) => {
+    try {
+        await db.query('DELETE FROM packages WHERE id=$1', [req.params.id]);
+        res.json({ success: true, message: 'Paket silindi.' });
     } catch (err) {
         res.status(500).json({ success: false, message: 'Sunucu hatası' });
     }

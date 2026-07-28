@@ -114,6 +114,26 @@ const initializeDatabase = async () => {
         gecen_sure_dk INTEGER,
         FOREIGN KEY (application_id) REFERENCES applications(id)
       );
+
+      CREATE TABLE IF NOT EXISTS packages (
+        id SERIAL PRIMARY KEY,
+        paket_adi TEXT NOT NULL,
+        odeme_periyodu TEXT NOT NULL,
+        tek_cekim REAL,
+        taksit_2 REAL,
+        taksit_3 REAL,
+        taksit_4 REAL,
+        taksit_5 REAL,
+        taksit_6 REAL,
+        taksit_7 REAL,
+        taksit_8 REAL,
+        taksit_9 REAL,
+        taksit_10 REAL,
+        taksit_11 REAL,
+        taksit_12 REAL,
+        olusturma_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        guncelleme_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
     `);
 
     // Auto-migration for existing databases
@@ -161,6 +181,15 @@ const initializeDatabase = async () => {
       await pool.query('ALTER TABLE applications ADD COLUMN sla_toplam_saat REAL');
       await pool.query('ALTER TABLE applications ADD COLUMN onaylanma_tarihi TIMESTAMP');
       console.log("Migration: SLA kolonları eklendi.");
+    } catch (e) { }
+
+    // Auto-migration for existing databases: Teklif / Offer columns
+    try {
+      await pool.query('ALTER TABLE applications ADD COLUMN odeme_periyodu TEXT');
+      await pool.query('ALTER TABLE applications ADD COLUMN teklif_durumu TEXT');
+      await pool.query('ALTER TABLE applications ADD COLUMN teklif_detayi TEXT');
+      await pool.query('ALTER TABLE applications ADD COLUMN red_eden TEXT');
+      console.log("Migration: Teklif kolonları eklendi.");
     } catch (e) { }
 
     // Default admin eklentisi

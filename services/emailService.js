@@ -26,7 +26,7 @@ const templates = {
         ${headerHtml('Başvurunuz Alındı')}
         <div style="background:#fff;padding:30px;border-radius:0 0 8px 8px">
           <p style="color:#333;font-size:16px">Sayın <strong>${data.yetkili_ad_soyad}</strong>,</p>
-          <p style="color:#555">QNBpay <strong>${data.pos_tipi}</strong> başvurunuz başarıyla alınmıştır. İlgili birimlerimiz en kısa sürede değerlendirmeyi tamamlayacaktır.</p>
+          <p style="color:#555">QNBpay <strong>${data.pos_tipi}</strong> başvurunuz başarıyla alınmıştır. İlgili birimlerimiz en kısa sürede değerlendirmeyi tamamlayacaktır. <strong>Başvurunuz incelendikten sonra size özel bir fiyatlandırma teklifi iletilecektir. Lütfen e-postalarınızı takip ediniz.</strong></p>
           <div style="background:#f4f6f9;padding:20px;border-radius:8px;margin:20px 0;border-left:4px solid ${QNB_COLOR}">
             <p style="margin:5px 0;color:#333"><strong>📋 Başvuru No:</strong> ${data.basvuru_no}</p>
             <p style="margin:5px 0;color:#333"><strong>🏢 Firma:</strong> ${data.firma_unvani}</p>
@@ -143,6 +143,26 @@ const templates = {
             <a href="${data.reset_link}" style="background:${QNB_COLOR};color:#fff;padding:14px 30px;border-radius:25px;text-decoration:none;font-weight:bold;font-size:15px;display:inline-block">Şifremi Belirle</a>
           </div>
           <p style="color:#888;font-size:12px;">Bu bağlantı 24 saat boyunca geçerlidir. Bağlantıya tıklayamıyorsanız şu adresi kopyalayıp tarayıcınıza yapıştırın:<br><br><span style="word-break:break-all;color:${QNB_COLOR};">${data.reset_link}</span></p>
+        </div>
+      </div>
+    `
+  }),
+
+  teklifIletildi: (data) => ({
+    subject: `Fiyat Teklifi İletildi - Başvuru No: ${data.basvuru_no}`,
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8f9fa;padding:20px;border-radius:10px;border:1px solid #ddd">
+        ${headerHtml('Size Özel Fiyat Teklifi')}
+        <div style="background:#fff;padding:30px;border-radius:0 0 8px 8px">
+          <p style="color:#333">Sayın <strong>${data.yetkili_ad_soyad}</strong>,</p>
+          <p style="color:#555"><strong>${data.basvuru_no}</strong> numaralı POS başvurunuz incelenmiş olup, firmanıza özel ödeme periyodu ve komisyon oranlarımız belirlenmiştir.</p>
+          ${data.aciklama ? `<p style="color:#555;background:#f5f5f5;padding:12px;border-radius:6px"><strong>Yönetici Notu:</strong> ${data.aciklama}</p>` : ''}
+          <div style="text-align:center;margin:30px 0">
+            <a href="${data.teklif_linki}" style="background:${QNB_COLOR};color:#fff;padding:14px 30px;border-radius:25px;text-decoration:none;font-weight:bold;font-size:15px;display:inline-block">
+              Teklifi Görüntüle ve Onayla
+            </a>
+          </div>
+          <p style="color:#888;font-size:13px;text-align:center">Bu bağlantı üzerinden teklif detaylarını inceleyebilir ve onaylayabilirsiniz.</p>
         </div>
       </div>
     `

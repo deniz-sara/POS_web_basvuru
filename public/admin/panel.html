@@ -539,6 +539,7 @@
             <a class="nav-item active" id="nav-basvuru" onclick="showView('basvuru')">Tüm Başvurular</a>
             <a class="nav-item" id="nav-kullanici" onclick="showView('kullanici')">Yöneticiler</a>
             <a class="nav-item" id="nav-logs" onclick="showView('logs')">İşlem Geçmişi</a>
+            <a class="nav-item" id="nav-paketler" onclick="showView('paketler')">Paketler</a>
         </div>
         <div class="sidebar-footer">
             <div id="adminName">Admin User</div>
@@ -682,6 +683,31 @@
                     </table>
                 </div>
             </div>
+
+            <!-- Paketler Görünümü -->
+            <div id="view-paketler" style="display: none;">
+                <div class="filters" style="justify-content: space-between; align-items: center;">
+                    <div style="font-size: 14px; color: #666;">Fiyatlandırma paketlerini yönetin.</div>
+                    <button class="btn btn-primary" onclick="openPaketModal()">+ Yeni Paket Ekle</button>
+                </div>
+
+                <div class="table-container">
+                    <table id="paketlerTable">
+                        <thead>
+                            <tr>
+                                <th>Paket Adı</th>
+                                <th>Ödeme Periyodu</th>
+                                <th>Tek Çekim</th>
+                                <th>Diğer Oranlar</th>
+                                <th>İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody id="paketlerTableBody">
+                            <!-- Data inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
     <!-- Detail Modal -->
@@ -751,10 +777,43 @@
                     <div class="detail-section">
                         <h4>SLA Geçmişi</h4>
                         <div id="m_sla_history" style="font-size: 13px; background: #f9fafb; padding: 10px; border-radius: 6px; border: 1px solid var(--border);"></div>
+                    <div class="detail-section">
+                        <h4>SLA Geçmişi</h4>
+                        <div id="m_sla_history" style="font-size: 13px; background: #f9fafb; padding: 10px; border-radius: 6px; border: 1px solid var(--border);"></div>
                     </div>
                 </div>
 
                 <div class="modal-right">
+                    <div class="action-box">
+                        <h4 style="margin-bottom:15px;color:var(--secondary)">Fiyat Teklifi İlet</h4>
+                        <select id="m_paket_select" onchange="autoFillPaket()" style="width:100%;padding:8px;margin-bottom:10px;border-radius:4px;border:1px solid #ccc">
+                            <option value="">Paket Seçiniz (Otomatik Doldurur)</option>
+                        </select>
+                        <select id="m_teklif_periyot" style="width:100%;padding:8px;margin-bottom:10px;border-radius:4px;border:1px solid #ccc">
+                            <option value="Ertesi Gün">Ertesi Gün</option>
+                            <option value="7 Gün">7 Gün</option>
+                            <option value="14 Gün">14 Gün</option>
+                            <option value="30 Gün">30 Gün</option>
+                            <option value="Salt Bloke">Salt Bloke</option>
+                        </select>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:10px;font-size:12px;">
+                            <input type="number" step="0.01" id="t_1" placeholder="Tek Çekim %">
+                            <input type="number" step="0.01" id="t_2" placeholder="2 Taksit %">
+                            <input type="number" step="0.01" id="t_3" placeholder="3 Taksit %">
+                            <input type="number" step="0.01" id="t_4" placeholder="4 Taksit %">
+                            <input type="number" step="0.01" id="t_5" placeholder="5 Taksit %">
+                            <input type="number" step="0.01" id="t_6" placeholder="6 Taksit %">
+                            <input type="number" step="0.01" id="t_7" placeholder="7 Taksit %">
+                            <input type="number" step="0.01" id="t_8" placeholder="8 Taksit %">
+                            <input type="number" step="0.01" id="t_9" placeholder="9 Taksit %">
+                            <input type="number" step="0.01" id="t_10" placeholder="10 Taksit %">
+                            <input type="number" step="0.01" id="t_11" placeholder="11 Taksit %">
+                            <input type="number" step="0.01" id="t_12" placeholder="12 Taksit %">
+                        </div>
+                        <textarea id="m_teklif_not" placeholder="Müşteriye özel not (Opsiyonel)" style="width:100%;padding:8px;margin-bottom:10px;border-radius:4px;border:1px solid #ccc;resize:vertical;" rows="2"></textarea>
+                        <button class="btn btn-outline" style="width:100%;background:var(--secondary);color:white;border-color:var(--secondary)" onclick="sendTeklif()">Teklifi İlet</button>
+                    </div>
+
                     <div class="action-box">
                         <h4 style="margin-bottom:15px;color:var(--text)">Durum Güncelle</h4>
                         <select id="m_durum_select"
@@ -841,6 +900,48 @@
         </div>
     </div>
 
+    <!-- Paket Modal -->
+    <div class="modal-overlay" id="paketModal">
+        <div class="modal" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3 id="p_modal_title">Yeni Paket Ekle</h3>
+                <button class="modal-close" onclick="closePaketModal()">&times;</button>
+            </div>
+            <div class="modal-body" style="grid-template-columns: 1fr; gap: 10px;">
+                <input type="hidden" id="p_edit_id">
+                <div class="form-group">
+                    <label>Paket Adı</label>
+                    <input type="text" id="p_ad" placeholder="Örn: Standart 1">
+                </div>
+                <div class="form-group">
+                    <label>Ödeme Periyodu</label>
+                    <select id="p_periyot">
+                        <option value="Ertesi Gün">Ertesi Gün</option>
+                        <option value="7 Gün">7 Gün</option>
+                        <option value="14 Gün">14 Gün</option>
+                        <option value="30 Gün">30 Gün</option>
+                        <option value="Salt Bloke">Salt Bloke</option>
+                    </select>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;">
+                    <div class="form-group"><label>Tek Çekim</label><input type="number" step="0.01" id="p_t1"></div>
+                    <div class="form-group"><label>2 Taksit</label><input type="number" step="0.01" id="p_t2"></div>
+                    <div class="form-group"><label>3 Taksit</label><input type="number" step="0.01" id="p_t3"></div>
+                    <div class="form-group"><label>4 Taksit</label><input type="number" step="0.01" id="p_t4"></div>
+                    <div class="form-group"><label>5 Taksit</label><input type="number" step="0.01" id="p_t5"></div>
+                    <div class="form-group"><label>6 Taksit</label><input type="number" step="0.01" id="p_t6"></div>
+                    <div class="form-group"><label>7 Taksit</label><input type="number" step="0.01" id="p_t7"></div>
+                    <div class="form-group"><label>8 Taksit</label><input type="number" step="0.01" id="p_t8"></div>
+                    <div class="form-group"><label>9 Taksit</label><input type="number" step="0.01" id="p_t9"></div>
+                    <div class="form-group"><label>10 Taksit</label><input type="number" step="0.01" id="p_t10"></div>
+                    <div class="form-group"><label>11 Taksit</label><input type="number" step="0.01" id="p_t11"></div>
+                    <div class="form-group"><label>12 Taksit</label><input type="number" step="0.01" id="p_t12"></div>
+                </div>
+                <button class="btn btn-primary" id="p_modal_btn" style="width: 100%; margin-top: 10px;" onclick="savePaket()">Kaydet</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const token = localStorage.getItem('pos_admin_token');
         const userStr = localStorage.getItem('pos_admin_user');
@@ -860,27 +961,30 @@
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
             document.getElementById('nav-' + viewId).classList.add('active');
 
+            document.getElementById('view-basvuru').style.display = 'none';
+            document.getElementById('view-kullanici').style.display = 'none';
+            document.getElementById('view-logs').style.display = 'none';
+            document.getElementById('view-paketler').style.display = 'none';
+            document.getElementById('btnExport').style.display = 'none';
+
             if (viewId === 'basvuru') {
                 document.getElementById('view-basvuru').style.display = 'block';
-                document.getElementById('view-kullanici').style.display = 'none';
-                document.getElementById('view-logs').style.display = 'none';
                 document.getElementById('pageTitle').innerText = 'Başvurular';
                 document.getElementById('btnExport').style.display = 'inline-block';
                 loadDashboard();
+                loadPaketlerDropdown();
             } else if (viewId === 'kullanici') {
-                document.getElementById('view-basvuru').style.display = 'none';
                 document.getElementById('view-kullanici').style.display = 'block';
-                document.getElementById('view-logs').style.display = 'none';
                 document.getElementById('pageTitle').innerText = 'Sistem Yöneticileri';
-                document.getElementById('btnExport').style.display = 'none';
                 loadUsers();
             } else if (viewId === 'logs') {
-                document.getElementById('view-basvuru').style.display = 'none';
-                document.getElementById('view-kullanici').style.display = 'none';
                 document.getElementById('view-logs').style.display = 'block';
                 document.getElementById('pageTitle').innerText = 'İşlem Geçmişi';
-                document.getElementById('btnExport').style.display = 'none';
                 loadLogs();
+            } else if (viewId === 'paketler') {
+                document.getElementById('view-paketler').style.display = 'block';
+                document.getElementById('pageTitle').innerText = 'Paket Yönetimi';
+                loadPaketlerList();
             }
         }
 
@@ -1573,6 +1677,149 @@
                 if (currentView === 'logs') loadLogs();
             } else {
                 alert(res.message || 'Silme başarısız');
+            }
+        }
+
+        // --- Paketler JS ---
+        let paketlerList = [];
+
+        async function loadPaketlerList() {
+            const data = await apiCall('/paketler');
+            const tbody = document.getElementById('paketlerTableBody');
+            tbody.innerHTML = '';
+            paketlerList = data.data || [];
+
+            paketlerList.forEach(p => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="font-weight:600">${p.paket_adi}</td>
+                    <td>${p.odeme_periyodu}</td>
+                    <td>${p.tek_cekim ? '%'+p.tek_cekim : '-'}</td>
+                    <td style="font-size:12px;">2T: ${p.taksit_2||'-'}, 3T: ${p.taksit_3||'-'}, 4T: ${p.taksit_4||'-'}, ...12T: ${p.taksit_12||'-'}</td>
+                    <td>
+                        <button class="btn btn-outline" style="padding:4px 8px;font-size:12px" onclick="openPaketModal(${p.id})">Düzenle</button>
+                        <button class="btn btn-outline" style="padding:4px 8px;font-size:12px;color:red;border-color:red" onclick="deletePaket(${p.id})">Sil</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function loadPaketlerDropdown() {
+            const data = await apiCall('/paketler');
+            paketlerList = data.data || [];
+            const select = document.getElementById('m_paket_select');
+            select.innerHTML = '<option value="">Paket Seçiniz (Otomatik Doldurur)</option>';
+            paketlerList.forEach(p => {
+                select.innerHTML += \`<option value="${p.id}">${p.paket_adi} (${p.odeme_periyodu})</option>\`;
+            });
+        }
+
+        function openPaketModal(id = null) {
+            document.getElementById('paketModal').style.display = 'flex';
+            if (id) {
+                document.getElementById('p_modal_title').innerText = 'Paket Düzenle';
+                const p = paketlerList.find(x => x.id === id);
+                document.getElementById('p_edit_id').value = p.id;
+                document.getElementById('p_ad').value = p.paket_adi;
+                document.getElementById('p_periyot').value = p.odeme_periyodu;
+                document.getElementById('p_t1').value = p.tek_cekim || '';
+                for(let i=2; i<=12; i++) {
+                    document.getElementById('p_t'+i).value = p['taksit_'+i] || '';
+                }
+            } else {
+                document.getElementById('p_modal_title').innerText = 'Yeni Paket Ekle';
+                document.getElementById('p_edit_id').value = '';
+                document.getElementById('p_ad').value = '';
+                document.getElementById('p_periyot').value = 'Ertesi Gün';
+                document.getElementById('p_t1').value = '';
+                for(let i=2; i<=12; i++) document.getElementById('p_t'+i).value = '';
+            }
+        }
+
+        function closePaketModal() {
+            document.getElementById('paketModal').style.display = 'none';
+        }
+
+        async function savePaket() {
+            const id = document.getElementById('p_edit_id').value;
+            const payload = {
+                paket_adi: document.getElementById('p_ad').value,
+                odeme_periyodu: document.getElementById('p_periyot').value,
+                tek_cekim: document.getElementById('p_t1').value || null
+            };
+            for(let i=2; i<=12; i++) {
+                payload['taksit_'+i] = document.getElementById('p_t'+i).value || null;
+            }
+
+            const method = id ? 'PUT' : 'POST';
+            const endpoint = id ? \`/paket/\${id}\` : '/paket';
+            
+            const res = await apiCall(endpoint, {
+                method,
+                body: JSON.stringify(payload)
+            });
+
+            if (res.success) {
+                closePaketModal();
+                loadPaketlerList();
+                loadPaketlerDropdown();
+            } else {
+                alert(res.message);
+            }
+        }
+
+        async function deletePaket(id) {
+            if(!confirm('Bu paketi silmek istediğinize emin misiniz?')) return;
+            const res = await apiCall(\`/paket/\${id}\`, { method: 'DELETE' });
+            if (res.success) {
+                loadPaketlerList();
+                loadPaketlerDropdown();
+            } else {
+                alert(res.message);
+            }
+        }
+
+        function autoFillPaket() {
+            const id = document.getElementById('m_paket_select').value;
+            if(!id) return;
+            const p = paketlerList.find(x => x.id == id);
+            if(!p) return;
+            
+            document.getElementById('m_teklif_periyot').value = p.odeme_periyodu;
+            document.getElementById('t_1').value = p.tek_cekim || '';
+            for(let i=2; i<=12; i++) {
+                document.getElementById('t_'+i).value = p['taksit_'+i] || '';
+            }
+        }
+
+        async function sendTeklif() {
+            if(!currentActiveId) return;
+            
+            const odeme_periyodu = document.getElementById('m_teklif_periyot').value;
+            const aciklama = document.getElementById('m_teklif_not').value;
+            const teklif_detayi = {
+                tek_cekim: document.getElementById('t_1').value || null
+            };
+            for(let i=2; i<=12; i++) {
+                teklif_detayi['taksit_'+i] = document.getElementById('t_'+i).value || null;
+            }
+
+            const res = await apiCall(\`/basvuru/\${currentActiveId}/teklif-ilet\`, {
+                method: 'PUT',
+                body: JSON.stringify({
+                    odeme_periyodu,
+                    teklif_detayi,
+                    aciklama
+                })
+            });
+
+            if(res.success) {
+                alert('Fiyat teklifi başarıyla müşteriye iletildi!');
+                closeModal();
+                loadBasvurular();
+            } else {
+                alert(res.message);
             }
         }
     </script>
