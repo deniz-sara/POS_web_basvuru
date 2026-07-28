@@ -638,7 +638,7 @@
                                 <th>İl</th>
                                 <th>Talep</th>
                                 <th style="cursor: pointer;" onclick="loadBasvurular('sla_desc')">SLA (Toplam) ↕</th>
-                                <th>Mevcut Durum SLA</th>
+                                <th>SLA (Durum)</th>
                                 <th>Durum</th>
                             </tr>
                         </thead>
@@ -1252,6 +1252,7 @@
             tbody.innerHTML = '';
 
             if (data && data.success) {
+                window.currentBasvurular = data.data;
                 data.data.forEach(b => {
                     const tr = document.createElement('tr');
                     tr.onclick = () => openModal(b.id);
