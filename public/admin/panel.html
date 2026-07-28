@@ -1776,6 +1776,17 @@
 
 
 
+        function filterPaketlerByPeriyot() {
+            const currentPeriyot = document.getElementById('m_teklif_periyot').value;
+            const selectPaket = document.getElementById('m_paket_select');
+            selectPaket.innerHTML = '<option value="">Paket Seçiniz</option>';
+            paketlerList.forEach(p => {
+                if (!currentPeriyot || p.odeme_periyodu === currentPeriyot) {
+                    selectPaket.innerHTML += `<option value="${p.id}">${p.paket_adi} (${p.odeme_periyodu})</option>`;
+                }
+            });
+        }
+
         async function sendTeklif() {
             if(!currentActiveId) return;
             
