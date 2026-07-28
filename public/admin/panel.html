@@ -547,7 +547,8 @@
             <span style="font-size: 16px;">POS Başvuru Yönetimi</span>
         </div>
         <div class="nav-menu">
-            <a class="nav-item active" id="nav-basvuru" onclick="showView('basvuru')">Tüm Başvurular</a>\n            <a class="nav-item" id="nav-taslak" onclick="showView('taslak')">Yarım Kalanlar (Taslak)</a>
+            <a class="nav-item active" id="nav-basvuru" onclick="showView('basvuru')">Tüm Başvurular</a>
+            <a class="nav-item" id="nav-taslak" onclick="showView('taslak')">Yarım Kalanlar (Taslak)</a>
             <a class="nav-item" id="nav-kullanici" onclick="showView('kullanici')">Yöneticiler</a>
             <a class="nav-item" id="nav-logs" onclick="showView('logs')">İşlem Geçmişi</a>
             <a class="nav-item" id="nav-paketler" onclick="showView('paketler')">Paketler</a>
@@ -951,7 +952,8 @@
         document.getElementById('adminName').innerText = user.ad_soyad || 'Admin';
 
         let currentActiveId = null;
-        let currentView = 'basvuru';\n        let isTaslakView = false;
+        let currentView = 'basvuru';
+        let isTaslakView = false;
 
         function showView(viewId) {
             currentView = viewId;
@@ -1003,7 +1005,8 @@
             ek_bilgi: 'Evrak Bekleniyor',
             teklif_bekleniyor: 'Teklif Bekleniyor',
             onaylandi: 'Onaylandı',
-            reddedildi: 'Reddedildi',\n            taslak: 'Taslak (Yarım Kalan)'
+            reddedildi: 'Reddedildi',
+            taslak: 'Taslak (Yarım Kalan)'
         };
 
         const BELGE_TIPLERI = {
