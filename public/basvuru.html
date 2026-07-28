@@ -740,8 +740,9 @@
                 data.delete(b.id);
                 if (filesData[b.id]) {
                     if (Array.isArray(filesData[b.id])) {
-                        filesData[b.id].forEach(f => data.append(b.id, f));
-                    } else {
+                        // _alreadyUploaded işaretli sahte girdileri atla (taslaktan gelen)
+                        filesData[b.id].filter(f => !f._alreadyUploaded).forEach(f => data.append(b.id, f));
+                    } else if (!filesData[b.id]._alreadyUploaded) {
                         data.append(b.id, filesData[b.id]);
                     }
                 }
@@ -919,15 +920,21 @@
                         // Yüklenmiş Dosyalar
                         if (data.belgeler && data.belgeler.length > 0) {
                             data.belgeler.forEach(doc => {
-                                const box = document.getElementById('box_' + doc.belge_tipi);
-                                if (box) {
-                                    box.classList.add('uploaded');
-                                    const titleEl = box.querySelector('.upload-title');
-                                    const subtitleEl = box.querySelector('.upload-subtitle');
-                                    if(titleEl) titleEl.innerHTML = '<span style="color:#10b981;">✓ Yüklendi</span> (Değiştirmek için tıklayın)';
-                                    if(subtitleEl) subtitleEl.innerText = doc.orijinal_ad;
+                                // renderFileGrid card_ID yapısı kullanıyor
+                                const card = document.getElementById('card_' + doc.belge_tipi);
+                                const nameEl = document.getElementById('name_' + doc.belge_tipi);
+                                if (card) {
+                                    card.classList.add('has-file');
+                                    if (nameEl) {
+                                        nameEl.innerText = doc.orijinal_ad || 'Daha önce yüklendi';
+                                        nameEl.style.color = '#10b981';
+                                    }
+                                    // Zorunlu alan validasyonunu geçirmek için filesData'ya işaret ekle
+                                    // (gerçek File nesnesi yok, sadece "uploaded" durumunu temsil eder)
+                                    filesData[doc.belge_tipi] = [{ name: doc.orijinal_ad, size: doc.boyut || 0, _alreadyUploaded: true }];
                                 }
                             });
+                            checkSubmitStatus();
                         }
                     }
                 } catch(e) {
