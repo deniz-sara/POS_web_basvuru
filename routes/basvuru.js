@@ -339,14 +339,14 @@ router.post('/teklif-cevapla', async (req, res) => {
         let pIndex = 4;
         if (yeniDurum === 'onaylandi') {
             const totalSaat = Math.round((new Date() - new Date(app.basvuru_tarihi)) / 3600000 * 10) / 10;
-            extraUpdate = \`, sla_toplam_saat = $\${pIndex++}, onaylanma_tarihi = CURRENT_TIMESTAMP\`;
+            extraUpdate = `, sla_toplam_saat = $${pIndex++}, onaylanma_tarihi = CURRENT_TIMESTAMP`;
             extraParams.push(totalSaat);
         } else if (yeniDurum === 'reddedildi') {
-            extraUpdate = \`, red_eden = $\${pIndex++}\`;
+            extraUpdate = `, red_eden = $${pIndex++}`;
             extraParams.push(redEden);
         }
 
-        await db.query(\`UPDATE applications SET durum = $1, teklif_durumu = $2, guncelleme_tarihi = CURRENT_TIMESTAMP\${extraUpdate} WHERE id = $3\`, [yeniDurum, yeniTeklifDurum, app.id, ...extraParams]);
+        await db.query(`UPDATE applications SET durum = $1, teklif_durumu = $2, guncelleme_tarihi = CURRENT_TIMESTAMP${extraUpdate} WHERE id = $3`, [yeniDurum, yeniTeklifDurum, app.id, ...extraParams]);
 
         // SLA Update
         const activeHistoryRes = await db.query('SELECT id, baslangic_tarihi FROM status_history WHERE application_id = $1 AND bitis_tarihi IS NULL ORDER BY id DESC LIMIT 1', [app.id]);
