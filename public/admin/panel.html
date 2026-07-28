@@ -1229,8 +1229,8 @@
         }
 
         function formatSla(hours) {
-            if (hours == null) return '-';
-            let totalMinutes = Math.round(hours * 60);
+            if (hours == null || isNaN(hours) || hours === '') return '-';
+            let totalMinutes = Math.round(Number(hours) * 60);
             if (totalMinutes < 0) totalMinutes = 0;
             if (totalMinutes < 60) return `${totalMinutes}`;
             let mins = totalMinutes % 60;

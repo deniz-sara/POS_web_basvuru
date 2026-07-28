@@ -106,7 +106,13 @@ router.get('/basvuru/:id', authMiddleware, async (req, res) => {
             FROM documents WHERE application_id = $1
         `, [app.id]);
         const notesRes = await db.query('SELECT n.*, u.ad_soyad FROM application_notes n LEFT JOIN admin_users u ON n.admin_id = u.id WHERE n.application_id = $1 ORDER BY n.olusturma_tarihi DESC', [app.id]);
-        const historyRes = await db.query('SELECT * FROM status_history WHERE application_id = $1 ORDER BY id ASC', [app.id]);
+        const historyRes = await db.query(`
+            SELECT *, 
+                CASE 
+                    WHEN bitis_tarihi IS NULL THEN ROUND((EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - baslangic_tarihi)) / 60.0)::numeric, 0)
+                    ELSE gecen_sure_dk 
+                END as hesaplanan_dk 
+            FROM status_history WHERE application_id = $1 ORDER BY id ASC`, [app.id]);
 
         res.json({ success: true, basvuru: app, belgeler: docsRes.rows, notlar: notesRes.rows, history: historyRes.rows });
     } catch (err) {
