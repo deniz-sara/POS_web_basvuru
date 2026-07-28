@@ -73,6 +73,9 @@ router.get('/basvurular', authMiddleware, async (req, res) => {
         if (req.query.tarih_baslangic) { query += ` AND (a.basvuru_tarihi AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Istanbul')::date >= $${paramCount++}::date`; params.push(req.query.tarih_baslangic); }
         if (req.query.tarih_bitis) { query += ` AND (a.basvuru_tarihi AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Istanbul')::date <= $${paramCount++}::date`; params.push(req.query.tarih_bitis); }
         if (req.query.pos_tipi) { query += ` AND a.pos_tipi ILIKE $${paramCount++}`; params.push(`%${req.query.pos_tipi}%`); }
+        if (req.query.sla_gecen === 'true') {
+            query += ` AND COALESCE(a.sla_toplam_saat, ROUND((EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - a.basvuru_tarihi)) / 3600.0)::numeric, 1)) > 24 AND a.durum NOT IN ('onaylandi', 'reddedildi')`;
+        }
 
         if (req.query.sort === 'sla_desc') {
             query += ' GROUP BY a.id ORDER BY a.sla_toplam_saat DESC NULLS LAST, a.basvuru_tarihi ASC';

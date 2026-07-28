@@ -92,6 +92,16 @@
             font-weight: 600;
         }
 
+        .track-step.warning .track-dot {
+            background: #f59e0b;
+            animation: pulse-warning 2s infinite;
+        }
+
+        .track-step.warning .track-label {
+            color: #f59e0b;
+            font-weight: 600;
+        }
+
         @keyframes pulse {
             0% {
                 box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.4);
@@ -117,6 +127,20 @@
 
             100% {
                 box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+            }
+        }
+
+        @keyframes pulse-warning {
+            0% {
+                box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(245, 158, 11, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
             }
         }
 
@@ -251,6 +275,10 @@
                         <div class="track-dot"></div>
                         <div class="track-label">Değerlendirmede</div>
                     </div>
+                    <div class="track-step" id="step-teklif">
+                        <div class="track-dot"></div>
+                        <div class="track-label">Teklif</div>
+                    </div>
                     <div class="track-step" id="step-sonuc">
                         <div class="track-dot"></div>
                         <div class="track-label">Sonuç</div>
@@ -314,8 +342,9 @@
                 'inceleme': 2,
                 'ek_bilgi': 2,
                 'degerlendirme': 3,
-                'onaylandi': 4,
-                'reddedildi': 4
+                'teklif_bekleniyor': 4,
+                'onaylandi': 5,
+                'reddedildi': 5
             };
 
             const level = steps[durum] || 1;
@@ -323,15 +352,19 @@
             const el1 = document.getElementById('step-alindi');
             const el2 = document.getElementById('step-inceleme');
             const el3 = document.getElementById('step-degerlendirme');
-            const el4 = document.getElementById('step-sonuc');
+            const el4 = document.getElementById('step-teklif');
+            const el5 = document.getElementById('step-sonuc');
 
             // Reset
-            [el1, el2, el3, el4].forEach(e => e.className = 'track-step');
+            [el1, el2, el3, el4, el5].forEach(e => {
+                if(e) e.className = 'track-step';
+            });
 
             if (level >= 1) el1.classList.add('done');
             if (level >= 2) el2.classList.add('done');
             if (level >= 3) el3.classList.add('done');
             if (level >= 4) el4.classList.add('done');
+            if (level >= 5) el5.classList.add('done');
 
             // Active State
             if (durum === 'ek_bilgi') {
@@ -343,16 +376,21 @@
                 el2.classList.add('active');
             } else if (level === 3) {
                 el3.classList.add('active');
-            } else if (durum === 'onaylandi' || durum === 'reddedildi') {
+            } else if (level === 4) {
                 el4.classList.add('active');
+                if (durum === 'teklif_bekleniyor') {
+                    el4.classList.add('warning');
+                    el4.querySelector('.track-label').innerText = 'Fiyat Teklifi İletildi';
+                }
+            } else if (level === 5) {
+                el5.classList.add('active');
                 if (durum === 'reddedildi') {
-                    el4.querySelector('.track-label').innerText = 'Reddedildi';
-                    el4.classList.remove('done');
-                    el4.classList.add('error');
+                    el5.querySelector('.track-label').innerText = 'Reddedildi';
+                    el5.classList.remove('done');
+                    el5.classList.add('error');
                     document.getElementById('status-badge').style.color = 'var(--error)';
                 } else {
-                    el4.querySelector('.track-label').innerText = 'Onaylandı';
-                    document.getElementById('status-badge').style.color = 'var(--secondary)';
+                    el5.querySelector('.track-label').innerText = 'Onaylandı';
                 }
             }
         }

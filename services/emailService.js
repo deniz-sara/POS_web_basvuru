@@ -26,7 +26,7 @@ const templates = {
         ${headerHtml('Başvurunuz Alındı')}
         <div style="background:#fff;padding:30px;border-radius:0 0 8px 8px">
           <p style="color:#333;font-size:16px">Sayın <strong>${data.yetkili_ad_soyad}</strong>,</p>
-          <p style="color:#555">QNBpay <strong>${data.pos_tipi}</strong> başvurunuz başarıyla alınmıştır. İlgili birimlerimiz en kısa sürede değerlendirmeyi tamamlayacaktır. <strong>Başvurunuz incelendikten sonra size özel bir fiyatlandırma teklifi iletilecektir. Lütfen e-postalarınızı takip ediniz.</strong></p>
+          <p style="color:#555">QNBpay <strong>${data.pos_tipi}</strong> başvurunuz başarıyla alınmıştır. İlgili birimlerimiz en kısa sürede değerlendirmeyi tamamlayacaktır.<br><br><strong>Başvurunuz incelendikten sonra size özel bir fiyatlandırma teklifi iletilecektir. Lütfen e-postalarınızı takip ediniz.</strong></p>
           <div style="background:#f4f6f9;padding:20px;border-radius:8px;margin:20px 0;border-left:4px solid ${QNB_COLOR}">
             <p style="margin:5px 0;color:#333"><strong>📋 Başvuru No:</strong> ${data.basvuru_no}</p>
             <p style="margin:5px 0;color:#333"><strong>🏢 Firma:</strong> ${data.firma_unvani}</p>

@@ -589,6 +589,7 @@
                             <option value="inceleme">Evrak İnceleme</option>
                             <option value="ek_bilgi">Evrak Bekleniyor</option>
                             <option value="degerlendirme">Değerlendirme</option>
+                            <option value="teklif_bekleniyor">Teklif Bekleniyor</option>
                             <option value="onaylandi">Onaylandı</option>
                             <option value="reddedildi">Reddedildi</option>
                         </select>
@@ -1048,7 +1049,7 @@
 
                 document.getElementById('statsGrid').innerHTML = `
                     <div class="stat-card" onclick="filterByDurum('')"><div class="title">Toplam</div><div class="value">${stats.toplam}</div></div>
-                    <div class="stat-card" style="border-left-color: var(--info)" onclick="filterByDurum('')"><div class="title">Bugün</div><div class="value">${stats.bugun}</div></div>
+                    <div class="stat-card" style="border-left-color: var(--info)" onclick="filterByBugun()"><div class="title">Bugün</div><div class="value">${stats.bugun}</div></div>
                     <div class="stat-card" style="border-left-color: var(--secondary)" onclick="filterByDurum('alindi')"><div class="title">Alınanlar</div><div class="value">${stats.durumlar.find(d => d.durum === 'alindi')?.count || 0}</div></div>
                     <div class="stat-card" style="border-left-color: var(--warning)" onclick="filterByDurum('inceleme')"><div class="title">İnceleme</div><div class="value">${stats.durumlar.find(d => d.durum === 'inceleme')?.count || 0}</div></div>
                     <div class="stat-card" style="border-left-color: var(--error)" onclick="filterByDurum('ek_bilgi')"><div class="title">Evrak Bek.</div><div class="value">${eksikCount}</div></div>
@@ -1174,7 +1175,34 @@
             }
         }
 
+        let currentSlaFilter = false;
+        function filterByDurum(val) {
+            currentSlaFilter = false;
+            document.getElementById('f_tarih_baslangic').value = '';
+            document.getElementById('f_durum').value = val;
+            document.getElementById('f_sort').value = '';
+            loadBasvurular();
+        }
+
+        function sortBySLA() {
+            currentSlaFilter = true;
+            document.getElementById('f_tarih_baslangic').value = '';
+            document.getElementById('f_durum').value = '';
+            document.getElementById('f_sort').value = 'sla_desc';
+            loadBasvurular();
+        }
+
+        function filterByBugun() {
+            currentSlaFilter = false;
+            document.getElementById('f_durum').value = '';
+            document.getElementById('f_sort').value = '';
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('f_tarih_baslangic').value = today;
+            loadBasvurular();
+        }
+
         function clearFilters() {
+            currentSlaFilter = false;
             document.getElementById('f_no').value = '';
             document.getElementById('f_firma').value = '';
             document.getElementById('f_durum').value = '';
@@ -1182,18 +1210,6 @@
             document.getElementById('f_tarih_bitis').value = '';
             document.getElementById('f_il').value = '';
             document.getElementById('f_urun').value = '';
-            loadBasvurular();
-        }
-
-        function filterByDurum(val) {
-            document.getElementById('f_durum').value = val;
-            document.getElementById('f_sort').value = '';
-            loadBasvurular();
-        }
-
-        function sortBySLA() {
-            document.getElementById('f_durum').value = '';
-            document.getElementById('f_sort').value = 'sla_desc';
             loadBasvurular();
         }
 
@@ -1207,6 +1223,7 @@
             if (document.getElementById('f_il').value) params.append('il', document.getElementById('f_il').value);
             if (document.getElementById('f_urun').value) params.append('pos_tipi', document.getElementById('f_urun').value);
             if (document.getElementById('f_sort') && document.getElementById('f_sort').value) params.append('sort', document.getElementById('f_sort').value);
+            if (currentSlaFilter) params.append('sla_gecen', 'true');
             return params;
         }
 
@@ -1330,7 +1347,18 @@
             }
 
             // Fiyat Teklifi Update (Paket Filtreleme)
-            document.getElementById('m_teklif_periyot').value = b.odeme_periyodu || 'Ertesi Gün';
+            if (paketlerList.length === 0) {
+                await loadPaketlerDropdown();
+            }
+            const periyotMap = {
+                'ertesi gün': 'Ertesi Gün',
+                '7 gün': '7 Gün',
+                '14 gün': '14 Gün',
+                '30 gün': '30 Gün',
+                'salt bloke': 'Salt Bloke'
+            };
+            let reqPeriyot = (b.odeme_periyodu || '').toLowerCase().trim();
+            document.getElementById('m_teklif_periyot').value = periyotMap[reqPeriyot] || 'Ertesi Gün';
             filterPaketlerByPeriyot();
             document.getElementById('m_teklif_not').value = '';
 
@@ -1799,11 +1827,11 @@
 
 
         function filterPaketlerByPeriyot() {
-            const currentPeriyot = document.getElementById('m_teklif_periyot').value;
+            const currentPeriyot = (document.getElementById('m_teklif_periyot').value || '').toLowerCase().trim();
             const selectPaket = document.getElementById('m_paket_select');
             selectPaket.innerHTML = '<option value="">Paket Seçiniz</option>';
             paketlerList.forEach(p => {
-                if (!currentPeriyot || p.odeme_periyodu === currentPeriyot) {
+                if (!currentPeriyot || (p.odeme_periyodu || '').toLowerCase().trim() === currentPeriyot) {
                     selectPaket.innerHTML += `<option value="${p.id}">${p.paket_adi} (${p.odeme_periyodu})</option>`;
                 }
             });

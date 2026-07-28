@@ -277,10 +277,13 @@
 
                 if (data.success) {
                     if (cevap === 'kabul') {
-                        showSuccess("Başvurunuz onaylanmıştır. Kullanıcı adınız ve şifre oluşturma linkiniz mail olarak iletilmiştir.");
+                        showSuccess("Başvurunuz onaylanmıştır. Kullanıcı adınız ve şifre oluşturma linkiniz mail olarak iletilmiştir.<br><br>Başvuru takip sayfasına yönlendiriliyorsunuz...");
                     } else {
-                        showError("Teklif reddedildi. Başvuru süreci iptal edilmiştir.");
+                        showError("Teklif reddedildi. Başvuru süreci iptal edilmiştir.<br><br>Başvuru takip sayfasına yönlendiriliyorsunuz...");
                     }
+                    setTimeout(() => {
+                        window.location.href = `/pos/durum.html?token=${token}`;
+                    }, 3000);
                 } else {
                     showError(data.message || 'Bir hata oluştu.');
                     document.getElementById('btnGroup').style.display = 'flex';
