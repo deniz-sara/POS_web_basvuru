@@ -118,6 +118,25 @@ router.post('/basvuru', (req, res) => {
                 req.files.forEach(f => { yuklenenBelgelerLocals[f.fieldname] = f; });
             }
 
+            // Eğer taslaktan devam ediyorsa, DB'deki mevcut belgeleri de sayıma dahil et
+            if (draft_token) {
+                try {
+                    const draftRow = await db.query("SELECT id FROM applications WHERE token = $1 AND durum = 'taslak'", [draft_token]);
+                    if (draftRow.rows.length > 0) {
+                        const draftId = draftRow.rows[0].id;
+                        const existingDocs = await db.query('SELECT belge_tipi FROM documents WHERE application_id = $1', [draftId]);
+                        existingDocs.rows.forEach(doc => {
+                            // Sadece yeni yüklenenler üzerine yazmasın; henüz yenisi gönderilmediyse DB'dekini say
+                            if (!yuklenenBelgelerLocals[doc.belge_tipi]) {
+                                yuklenenBelgelerLocals[doc.belge_tipi] = { _fromDB: true };
+                            }
+                        });
+                    }
+                } catch (e) {
+                    console.error('Taslak belge kontrolü hatası:', e);
+                }
+            }
+
             const eksikZorunlu = ZORUNLU_BELGELER.filter(b => !yuklenenBelgelerLocals[b]);
             if (eksikZorunlu.length > 0) {
                 // Hata durumunda geçici dosyaları sil
