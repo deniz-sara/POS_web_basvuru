@@ -659,7 +659,20 @@
             let valid = true;
             let firstInvalid = null;
 
+            // Özel kontrol: 2. adımda ürün seçimi zorunlu
+            if (n === 1) {
+                const checked = document.querySelectorAll('.urun_tipi_cb:checked');
+                if (checked.length === 0) {
+                    const cbWrapper = document.querySelector('.urun_tipi_cb').closest('div') || document.querySelector('.urun_tipi_cb').parentElement;
+                    alert('Lütfen en az bir ürün seçiniz.');
+                    document.querySelector('.urun_tipi_cb').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return false;
+                }
+            }
+
             for (let i = 0; i < inputs.length; i++) {
+                // hidden input'ları atla (özellikle hidden_pos_tipi)
+                if (inputs[i].type === 'hidden') continue;
                 if (!inputs[i].checkValidity()) {
                     inputs[i].classList.add('invalid');
                     inputs[i].style.borderColor = 'var(--error)';
@@ -755,7 +768,7 @@
                     cihazDetaylariArray.push(cihazObj);
                 }
             }
-            data.append('cihaz_detaylari', JSON.stringify({ mulkiyet: cihazMulti, cihazlar: cihazDetaylariArray }));
+            data.append('cihaz_detaylari', JSON.stringify({ mulkiyet: cihazMulti, cihaz_tipi: document.getElementById('cihaz_tipi').value || '', cihazlar: cihazDetaylariArray }));
             // --------------------------------------
 
             try {
@@ -848,29 +861,59 @@
                         // Pos tipleri
                         if (b.pos_tipi) {
                             document.querySelectorAll('.urun_tipi_cb').forEach(cb => cb.checked = false);
+                            // DB'de "Fiziki POS (Masaüstü)" gibi saklanabilir; startsWith ile eşleştir
                             b.pos_tipi.split(', ').forEach(t => {
-                                const cb = Array.from(document.querySelectorAll('.urun_tipi_cb')).find(c => c.value === t);
+                                const cb = Array.from(document.querySelectorAll('.urun_tipi_cb')).find(c => t === c.value || t.startsWith(c.value));
                                 if (cb) cb.checked = true;
                             });
                             toggleUrunDetaylari();
+                            updateHiddenPosTipi();
                         }
 
-                        // Cihaz Detaylari
+                        // Cihaz Detayları (Fiziki POS)
                         if (b.cihaz_detaylari) {
                             try {
                                 const parsed = JSON.parse(b.cihaz_detaylari);
                                 if (parsed.mulkiyet) {
+                                    // pos_adedi'ni ve mulkiyet'i set et
+                                    const posAdediEl = document.getElementById('pos_adedi');
+                                    if (posAdediEl && parsed.cihazlar && parsed.cihazlar.length > 0) {
+                                        posAdediEl.value = parsed.cihazlar.length;
+                                    }
                                     document.getElementById('cihaz_mulkiyeti').value = parsed.mulkiyet;
-                                    generateCihazAdresForms();
+                                    // cihaz_tipi alanını restore et
+                                    if (parsed.cihaz_tipi) {
+                                        const cihazTipiEl = document.getElementById('cihaz_tipi');
+                                        if (cihazTipiEl) {
+                                            cihazTipiEl.value = parsed.cihaz_tipi;
+                                            updateHiddenPosTipi();
+                                        }
+                                    }
+                                    // Doğru fonksiyon adıyla cihaz formlarını oluştur
+                                    renderCihazFormlari();
+                                    // Her cihazın il/ilçe/adres/seri bilgilerini restore et
                                     parsed.cihazlar.forEach((c, idx) => {
                                         const i = idx + 1;
-                                        if (document.querySelector(`input[name="cihaz_${i}_seri"]`)) document.querySelector(`input[name="cihaz_${i}_seri"]`).value = c.seri_no || '';
-                                        if (document.getElementById(`cihaz_${i}_il`)) document.getElementById(`cihaz_${i}_il`).value = c.il || '';
-                                        if (document.getElementById(`cihaz_${i}_ilce`)) document.getElementById(`cihaz_${i}_ilce`).innerHTML = `<option value="${c.ilce}">${c.ilce}</option>`;
-                                        if (document.querySelector(`textarea[name="cihaz_${i}_adres"]`)) document.querySelector(`textarea[name="cihaz_${i}_adres"]`).value = c.adres || '';
+                                        const seriEl = document.querySelector(`input[name="cihaz_${i}_seri"]`);
+                                        const ilEl = document.getElementById(`cihaz_${i}_il`);
+                                        const ilceEl = document.getElementById(`cihaz_${i}_ilce`);
+                                        const adresEl = document.querySelector(`textarea[name="cihaz_${i}_adres"]`);
+
+                                        if (seriEl && c.seri_no) seriEl.value = c.seri_no;
+                                        if (adresEl && c.adres) adresEl.value = c.adres;
+                                        if (ilEl && c.il) {
+                                            ilEl.value = c.il;
+                                            // ilçe seçeneklerini yüklemek için event tetikle
+                                            updateCihazIlce(i, c.il);
+                                            // ilçe seçenekleri yüklendikten sonra değeri set et
+                                            setTimeout((cihazIdx, ilceVal) => {
+                                                const el = document.getElementById(`cihaz_${cihazIdx}_ilce`);
+                                                if (el && ilceVal) el.value = ilceVal;
+                                            }, 100, i, c.ilce);
+                                        }
                                     });
                                 }
-                            } catch (e) {}
+                            } catch (e) { console.error('cihaz_detaylari restore hatası:', e); }
                         }
 
                         // Yüklenmiş Dosyalar
@@ -952,7 +995,7 @@
                     cihazDetaylariArray.push(cihazObj);
                 }
             }
-            data.append('cihaz_detaylari', JSON.stringify({ mulkiyet: cihazMulti, cihazlar: cihazDetaylariArray }));
+            data.append('cihaz_detaylari', JSON.stringify({ mulkiyet: cihazMulti, cihaz_tipi: document.getElementById('cihaz_tipi').value || '', cihazlar: cihazDetaylariArray }));
 
             try {
                 const response = await fetch('/api/pos/taslak', { method: 'POST', body: data });
