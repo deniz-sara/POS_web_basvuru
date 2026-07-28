@@ -263,9 +263,13 @@
             color: #1e40af;
         }
 
-        .badge.ek_bilgi {
-            background: #fee2e2;
+        .badge.reddedildi {
+            background-color: #fee2e2;
             color: #991b1b;
+        }
+        .badge.teklif_bekleniyor {
+            background-color: #e0e7ff;
+            color: #3730a3;
         }
 
         .badge.onaylandi {
@@ -273,9 +277,9 @@
             color: #065f46;
         }
 
-        .badge.reddedildi {
-            background: #f3f4f6;
-            color: #374151;
+        .badge.ek_bilgi {
+            background: #fee2e2;
+            color: #991b1b;
         }
 
         /* Modal */
@@ -786,7 +790,7 @@
                         <select id="m_paket_select" style="width:100%;padding:8px;margin-bottom:10px;border-radius:4px;border:1px solid #ccc">
                             <option value="">Paket Seçiniz</option>
                         </select>
-                        <select id="m_teklif_periyot" disabled style="width:100%;padding:8px;margin-bottom:10px;border-radius:4px;border:1px solid #ccc;background:#f5f5f5;">
+                        <select id="m_teklif_periyot" onchange="filterPaketlerByPeriyot()" style="width:100%;padding:8px;margin-bottom:10px;border-radius:4px;border:1px solid #ccc;background:#fff;">
                             <option value="Ertesi Gün">Ertesi Gün</option>
                             <option value="7 Gün">7 Gün</option>
                             <option value="14 Gün">14 Gün</option>
@@ -804,6 +808,7 @@
                             <option value="alindi">Başvuru Alındı</option>
                             <option value="inceleme">Evrak İnceleme</option>
                             <option value="degerlendirme">Değerlendirme</option>
+                            <option value="teklif_bekleniyor">Teklif Bekleniyor</option>
                             <option value="onaylandi">Onaylandı</option>
                             <option value="reddedildi">Reddedildi</option>
                         </select>
@@ -976,6 +981,7 @@
             inceleme: 'Evrak İnceleme',
             degerlendirme: 'Değerlendirme',
             ek_bilgi: 'Evrak Bekleniyor',
+            teklif_bekleniyor: 'Teklif Bekleniyor',
             onaylandi: 'Onaylandı',
             reddedildi: 'Reddedildi'
         };
@@ -1302,14 +1308,8 @@
             }
 
             // Fiyat Teklifi Update (Paket Filtreleme)
-            const selectPaket = document.getElementById('m_paket_select');
-            selectPaket.innerHTML = '<option value="">Paket Seçiniz</option>';
-            paketlerList.forEach(p => {
-                if (!b.odeme_periyodu || p.odeme_periyodu === b.odeme_periyodu) {
-                    selectPaket.innerHTML += `<option value="${p.id}">${p.paket_adi} (${p.odeme_periyodu})</option>`;
-                }
-            });
             document.getElementById('m_teklif_periyot').value = b.odeme_periyodu || 'Ertesi Gün';
+            filterPaketlerByPeriyot();
             document.getElementById('m_teklif_not').value = '';
 
             // Durum update
