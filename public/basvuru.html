@@ -833,7 +833,7 @@
                             const ilEl = document.getElementById('ilSelect');
                             if (ilEl) {
                                 ilEl.value = b.il;
-                                await updateIlceler();
+                                ilEl.dispatchEvent(new Event('change'));
                                 const ilceEl = document.getElementById('ilceSelect');
                                 if (ilceEl && b.ilce) ilceEl.value = b.ilce;
                             }
