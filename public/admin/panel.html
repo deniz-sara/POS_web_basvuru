@@ -637,7 +637,8 @@
                                 <th>Firma Unvanı</th>
                                 <th>İl</th>
                                 <th>Talep</th>
-                                <th>SLA (Bekleme)</th>
+                                <th style="cursor: pointer;" onclick="loadBasvurular('sla_desc')">SLA (Toplam) ↕</th>
+                                <th>Mevcut Durum SLA</th>
                                 <th>Durum</th>
                             </tr>
                         </thead>
@@ -1249,6 +1250,11 @@
                                 ${b.guncel_sla != null ? b.guncel_sla + ' Saat' : '-'}
                             </div>
                         </td>
+                        <td>
+                            <div style="font-weight: 600; color: #64748b;">
+                                ${b.mevcut_durum_saat != null ? b.mevcut_durum_saat + ' Saat' : '-'}
+                            </div>
+                        </td>
                         <td><span class="badge ${b.durum}">${DURUM_LABELS[b.durum] || b.durum}</span>
                             ${b.eksik_belge > 0 ? `<br><span style="font-size:11px;color:red">${b.eksik_belge} belge eksik</span>` : ''}
                         </td>
@@ -1489,7 +1495,16 @@
                 slaBox.innerHTML = data.history.map(h => {
                     const durumStr = DURUM_LABELS[h.durum] || h.durum;
                     const baslangicStr = new Date(h.baslangic_tarihi).toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-                    const sureStr = h.gecen_sure_dk != null ? ` (${Math.floor(h.gecen_sure_dk / 60)} Saat ${h.gecen_sure_dk % 60} Dk)` : ' (Devam Ediyor)';
+                    let sureStr = '';
+                    if (h.durum === 'onaylandi' || h.durum === 'reddedildi') {
+                        sureStr = ' (Tamamlandı)';
+                    } else if (h.gecen_sure_dk != null) {
+                        sureStr = ` (${formatSla(h.gecen_sure_dk / 60)})`;
+                    } else if (h.hesaplanan_dk != null) {
+                        sureStr = ` (${formatSla(h.hesaplanan_dk / 60)} - Devam Ediyor)`;
+                    } else {
+                        sureStr = ' (Devam Ediyor)';
+                    }
                     return `<div style="margin-bottom: 5px; border-bottom: 1px solid #eee; padding-bottom: 4px;"><strong>${durumStr}</strong>: ${baslangicStr} - <span style="color:#6b7280">${sureStr}</span></div>`;
                 }).join('');
             } else {

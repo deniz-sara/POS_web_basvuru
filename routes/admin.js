@@ -58,7 +58,8 @@ router.get('/basvurular', authMiddleware, async (req, res) => {
         SELECT a.*,
           COUNT(d.id) as toplam_belge,
           SUM(CASE WHEN d.durum = 'eksik' THEN 1 ELSE 0 END) as eksik_belge,
-          COALESCE(a.sla_toplam_saat, ROUND((EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - a.basvuru_tarihi)) / 3600.0)::numeric, 1)) as guncel_sla
+          COALESCE(a.sla_toplam_saat, ROUND((EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - a.basvuru_tarihi)) / 3600.0)::numeric, 1)) as guncel_sla,
+          CASE WHEN a.durum IN ('onaylandi', 'reddedildi') THEN 0 ELSE ROUND((EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - COALESCE(a.guncelleme_tarihi, a.basvuru_tarihi))) / 3600.0)::numeric, 1) END as mevcut_durum_saat
         FROM applications a
         LEFT JOIN documents d ON a.id = d.application_id
         WHERE 1=1
@@ -378,7 +379,23 @@ router.get('/export', authMiddleware, async (req, res) => {
             
             const h = historyDict[b.id] || {};
             const formatSaat = (dk) => dk ? (Math.round(dk / 60.0 * 10) / 10) + ' Saat' : '-';
+            const formatSla = (hours) => {
+                if (hours == null) return '-';
+                let totalMinutes = Math.round(hours * 60);
+                if (totalMinutes < 0) totalMinutes = 0;
+                if (totalMinutes < 60) return `${totalMinutes}`;
+                let mins = totalMinutes % 60;
+                let totalHours = Math.floor(totalMinutes / 60);
+                let days = Math.floor(totalHours / 24);
+                let remHours = totalHours % 24;
+                if (days > 0) {
+                    return `${days}:${remHours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+                } else {
+                    return `${totalHours}:${mins.toString().padStart(2, '0')}`;
+                }
+            };
             const guncelSLA = b.sla_toplam_saat || Math.round((new Date() - new Date(b.basvuru_tarihi)) / 3600000 * 10) / 10;
+            const mevcutDurumSaat = (b.durum === 'onaylandi' || b.durum === 'reddedildi') ? 0 : Math.round((new Date() - new Date(b.guncelleme_tarihi || b.basvuru_tarihi)) / 3600000 * 10) / 10;
 
             let teklifStr = '-';
             if (b.teklif_detayi) {
@@ -411,7 +428,8 @@ router.get('/export', authMiddleware, async (req, res) => {
                 'Tahmini Ciro': b.aylik_ciro,
                 'Durum': durumLabels[b.durum] || b.durum,
                 'Tarih': b.basvuru_tarihi,
-                'SLA Toplam (Saat)': guncelSLA,
+                'SLA (Toplam)': formatSla(guncelSLA),
+                'Mevcut Durum SLA': formatSla(mevcutDurumSaat),
                 'Fiyat Teklifi ve Oranlar': teklifStr,
                 'Bekleme: Alındı': formatSaat(h['alindi']),
                 'Bekleme: Evrak Bekleme': formatSaat(h['ek_bilgi']),
