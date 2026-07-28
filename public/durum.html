@@ -289,6 +289,17 @@
             <div style="margin-top: 20px;text-align:center;">
                 <p style="font-size:14px;color:var(--text-light)" id="aciklama-text"></p>
             </div>
+
+            <div id="onay-box" style="display: none; margin-top: 25px; padding: 20px; border: 1px solid #10b981; border-radius: 8px; background: #ecfdf5;">
+                <h3 style="color: #059669; margin-bottom: 15px; font-size: 16px;">Başvurunuz Onaylanmıştır</h3>
+                <p style="color: #065f46; font-size: 14px; margin-bottom: 15px;">Kullanıcı adınız ve şifre oluşturma linkiniz mail olarak iletilmiştir.</p>
+                <div id="onay-teklif-detay" style="background: white; border-radius: 6px; padding: 15px; border: 1px solid #d1fae5; margin-bottom: 15px;">
+                    <!-- Teklif Detayları Buraya Gelecek -->
+                </div>
+                <div style="text-align: center;">
+                    <button onclick="window.print()" class="btn btn-primary" style="background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px;">Teklif Detayını İndir / Yazdır</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -328,6 +339,27 @@
 
                 if (b.durum === 'ek_bilgi' && b.eksik_belgeler && b.eksik_belgeler.length > 0) {
                     showErrorBox(b.eksik_belgeler, b.upload_token);
+                }
+
+                if (b.durum === 'onaylandi') {
+                    const onayBox = document.getElementById('onay-box');
+                    const teklifDetayDiv = document.getElementById('onay-teklif-detay');
+                    onayBox.style.display = 'block';
+                    
+                    if (b.teklif_detayi) {
+                        teklifDetayDiv.innerHTML = `
+                            <h4 style="margin-bottom:10px; color:#1e293b;">Kabul Edilen Fiyat Teklifi</h4>
+                            <table style="width:100%; border-collapse:collapse; text-align:left; font-size:14px;">
+                                <tr><td style="padding:8px 0; border-bottom:1px solid #e2e8f0; color:#64748b;">Paket Adı:</td><td style="padding:8px 0; border-bottom:1px solid #e2e8f0; font-weight:600;">${b.teklif_detayi.paket_adi || '-'}</td></tr>
+                                <tr><td style="padding:8px 0; border-bottom:1px solid #e2e8f0; color:#64748b;">Ödeme Periyodu:</td><td style="padding:8px 0; border-bottom:1px solid #e2e8f0; font-weight:600;">${b.teklif_detayi.teklif_periyodu || b.odeme_periyodu || '-'}</td></tr>
+                                <tr><td style="padding:8px 0; border-bottom:1px solid #e2e8f0; color:#64748b;">Komisyon Oranı:</td><td style="padding:8px 0; border-bottom:1px solid #e2e8f0; font-weight:600;">%${b.teklif_detayi.komisyon_orani || '0'}</td></tr>
+                                <tr><td style="padding:8px 0; border-bottom:1px solid #e2e8f0; color:#64748b;">Sabit Ücret:</td><td style="padding:8px 0; border-bottom:1px solid #e2e8f0; font-weight:600;">${b.teklif_detayi.sabit_ucret || '0'} TL</td></tr>
+                                <tr><td style="padding:8px 0; color:#64748b;">Kurulum Ücreti:</td><td style="padding:8px 0; font-weight:600;">${b.teklif_detayi.kurulum_ucreti || '0'} TL</td></tr>
+                            </table>
+                        `;
+                    } else {
+                        teklifDetayDiv.innerHTML = '<p>Fiyat teklifi detayı bulunamadı.</p>';
+                    }
                 }
 
             } catch (err) {

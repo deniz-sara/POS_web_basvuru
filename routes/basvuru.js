@@ -269,7 +269,8 @@ router.get('/durum/:token', async (req, res) => {
                 upload_token: uploadToken,
                 pos_adedi: app.pos_adedi,
                 pos_tipi: app.pos_tipi,
-                odeme_periyodu: app.odeme_periyodu
+                odeme_periyodu: app.odeme_periyodu,
+                teklif_detayi: app.teklif_detayi ? (typeof app.teklif_detayi === 'string' ? JSON.parse(app.teklif_detayi) : app.teklif_detayi) : null
             }
         });
     } catch (err) {
