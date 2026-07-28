@@ -15,23 +15,37 @@
         }
 
         @media print {
-            body * {
-                visibility: hidden;
+            body {
+                background: white;
             }
-            #onay-box, #onay-box * {
-                visibility: visible;
+            .form-header, .info-card, .tracker-container, #aciklama-text, button, .btn, .alert-box {
+                display: none !important;
             }
-            #onay-box {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                border: none;
+            .container {
+                max-width: 100%;
                 margin: 0;
                 padding: 0;
+                width: 100%;
             }
-            button, .btn {
-                display: none !important;
+            .card {
+                box-shadow: none !important;
+                border: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            #onay-box {
+                display: block !important;
+                border: none !important;
+                background: transparent !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            table {
+                page-break-inside: auto;
+            }
+            tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
             }
         }
 
