@@ -806,7 +806,7 @@
                             <option value="Salt Bloke">Salt Bloke</option>
                         </select>
                         <textarea id="m_teklif_not" placeholder="Müşteriye özel not (Opsiyonel)" style="width:100%;padding:8px;margin-bottom:10px;border-radius:4px;border:1px solid #ccc;resize:vertical;" rows="2"></textarea>
-                        <button class="btn btn-outline" style="width:100%;background:var(--secondary);color:white;border-color:var(--secondary)" onclick="sendTeklif()">Teklifi İlet</button>
+                        <button id="btn_teklif_ilet" class="btn btn-outline" style="width:100%;background:var(--secondary);color:white;border-color:var(--secondary)" onclick="sendTeklif()">Teklifi İlet</button>
                     </div>
 
                     <div class="action-box">
@@ -1361,6 +1361,22 @@
             document.getElementById('m_teklif_periyot').value = periyotMap[reqPeriyot] || 'Ertesi Gün';
             filterPaketlerByPeriyot();
             document.getElementById('m_teklif_not').value = '';
+
+            // Fiyat Teklifi Buton Durumu
+            const btnTeklif = document.getElementById('btn_teklif_ilet');
+            if (b.durum === 'teklif_bekleniyor') {
+                btnTeklif.disabled = true;
+                btnTeklif.style.background = '#94a3b8'; // grey
+                btnTeklif.style.borderColor = '#94a3b8';
+                btnTeklif.innerText = 'Teklif Yanıtı Bekleniyor';
+                btnTeklif.style.cursor = 'not-allowed';
+            } else {
+                btnTeklif.disabled = false;
+                btnTeklif.style.background = 'var(--secondary)';
+                btnTeklif.style.borderColor = 'var(--secondary)';
+                btnTeklif.innerText = 'Teklifi İlet';
+                btnTeklif.style.cursor = 'pointer';
+            }
 
             // Durum update
             const selectEl = document.getElementById('m_durum_select');
