@@ -320,17 +320,12 @@ router.post('/taslak', (req, res) => {
             }
 
             const resumeUrl = `${process.env.BASE_URL || process.env.RENDER_EXTERNAL_URL || 'http://localhost:3000'}/pos/basvuru.html?draft_token=${currentToken}`;
-            const emailHtml = `<div style="font-family:sans-serif;color:#333;">
-                <h2>Başvurunuz Taslak Olarak Kaydedildi</h2>
-                <p>Sayın ${yetkili_ad_soyad || 'Yetkili'},</p>
-                <p>QNBpay POS başvurunuz taslak olarak kaydedilmiştir. Başvurunuza kaldığınız yerden devam etmek için aşağıdaki bağlantıya tıklayabilirsiniz:</p>
-                <p><a href="${resumeUrl}" style="display:inline-block;padding:10px 20px;background:#0d9488;color:#fff;text-decoration:none;border-radius:5px;font-weight:bold;">Başvuruya Devam Et</a></p>
-                <p>Bağlantı çalışmazsa şu adresi kopyalayıp tarayıcınıza yapıştırın:<br>${resumeUrl}</p>
-                <p>İyi çalışmalar dileriz.</p>
-            </div>`;
             
             if (email) {
-                await sendEmail(email, 'custom', { subject: 'QNBpay POS Başvuru Taslağınız', html: emailHtml });
+                await sendEmail(email, 'taslakKaydedildi', { 
+                    yetkili_ad_soyad: yetkili_ad_soyad || 'Yetkili',
+                    resumeUrl: resumeUrl
+                });
             }
             res.json({ success: true, token: currentToken, message: 'Taslak kaydedildi, devam linki e-postanıza gönderildi.' });
         } catch (err) {

@@ -819,20 +819,30 @@
                         });
 
                         // Select alanları
-                        if (b.sirket_tipi) document.querySelector(`input[name="sirket_tipi"][value="${b.sirket_tipi}"]`).checked = true;
-                        if (b.odeme_periyodu) document.querySelector(`input[name="odeme_periyodu"][value="${b.odeme_periyodu}"]`).checked = true;
+                        if (b.sirket_tipi) {
+                            const stEl = document.querySelector(`select[name="sirket_tipi"]`);
+                            if (stEl) stEl.value = b.sirket_tipi;
+                        }
+                        if (b.odeme_periyodu) {
+                            const opEl = document.querySelector(`select[name="odeme_periyodu"]`);
+                            if (opEl) opEl.value = b.odeme_periyodu;
+                        }
                         
                         // İller
                         if (b.il) {
-                            document.getElementById('il').value = b.il;
-                            await updateIlceler();
-                            if (b.ilce) document.getElementById('ilce').value = b.ilce;
+                            const ilEl = document.getElementById('ilSelect');
+                            if (ilEl) {
+                                ilEl.value = b.il;
+                                await updateIlceler();
+                                const ilceEl = document.getElementById('ilceSelect');
+                                if (ilceEl && b.ilce) ilceEl.value = b.ilce;
+                            }
                         }
 
                         // Vergi Dairesi
                         if (b.vergi_dairesi) {
-                            document.getElementById('vergi_dairesi').innerHTML = `<option value="${b.vergi_dairesi}">${b.vergi_dairesi}</option>`;
-                            document.getElementById('vergi_dairesi').value = b.vergi_dairesi;
+                            const vdEl = document.querySelector(`input[name="vergi_dairesi"]`);
+                            if (vdEl) vdEl.value = b.vergi_dairesi;
                         }
 
                         // Pos tipleri

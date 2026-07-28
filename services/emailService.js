@@ -168,9 +168,25 @@ const templates = {
     `
   }),
 
-  custom: (data) => ({
-    subject: data.subject,
-    html: data.html
+  taslakKaydedildi: (data) => ({
+    subject: `QNBpay POS Başvuru Taslağınız`,
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8f9fa;padding:20px;border-radius:10px;border:1px solid #ddd">
+        ${headerHtml('Başvurunuz Taslak Olarak Kaydedildi')}
+        <div style="background:#fff;padding:30px;border-radius:0 0 8px 8px">
+          <p style="color:#333">Sayın <strong>${data.yetkili_ad_soyad}</strong>,</p>
+          <p style="color:#555">QNBpay POS başvurunuz, kaldığınız yerden devam edebilmeniz için <strong>taslak olarak kaydedilmiştir</strong>.</p>
+          <p style="color:#555">Oluşturduğunuz taslağa ulaşmak ve başvurunuzu tamamlamak için aşağıdaki butona tıklayabilirsiniz:</p>
+          <div style="text-align:center;margin:30px 0">
+            <a href="${data.resumeUrl}" style="background:${QNB_COLOR};color:#fff;padding:14px 30px;border-radius:25px;text-decoration:none;font-weight:bold;font-size:15px;display:inline-block">
+              Başvuruya Kaldığım Yerden Devam Et
+            </a>
+          </div>
+          <p style="color:#888;font-size:13px;text-align:center">Buton çalışmazsa şu adresi kopyalayıp tarayıcınıza yapıştırın:<br><span style="word-break:break-all;color:${QNB_COLOR};">${data.resumeUrl}</span></p>
+          <p style="color:#888;font-size:13px;text-align:center">Bu bağlantı, siz başvurunuzu tamamlayana kadar geçerli olacaktır.</p>
+        </div>
+      </div>
+    `
   })
 };
 
