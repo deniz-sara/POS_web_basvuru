@@ -659,8 +659,8 @@
             let valid = true;
             let firstInvalid = null;
 
-            // Özel kontrol: 2. adımda ürün seçimi zorunlu
-            if (n === 1) {
+            // Özel kontrol: 3. adımda (Başvurulan Ürünler) ürün seçimi zorunlu
+            if (n === 2) {
                 const checked = document.querySelectorAll('.urun_tipi_cb:checked');
                 if (checked.length === 0) {
                     const cbWrapper = document.querySelector('.urun_tipi_cb').closest('div') || document.querySelector('.urun_tipi_cb').parentElement;
