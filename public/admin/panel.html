@@ -1228,6 +1228,22 @@
             return params;
         }
 
+        function formatSla(hours) {
+            if (hours == null) return '-';
+            let totalMinutes = Math.round(hours * 60);
+            if (totalMinutes < 0) totalMinutes = 0;
+            if (totalMinutes < 60) return `${totalMinutes}`;
+            let mins = totalMinutes % 60;
+            let totalHours = Math.floor(totalMinutes / 60);
+            let days = Math.floor(totalHours / 24);
+            let remHours = totalHours % 24;
+            if (days > 0) {
+                return `${days}:${remHours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+            } else {
+                return `${totalHours}:${mins.toString().padStart(2, '0')}`;
+            }
+        }
+
         async function loadBasvurular() {
             const params = getFilterParams();
 
@@ -1247,12 +1263,12 @@
                         <td>${b.pos_adedi}x ${b.pos_tipi}</td>
                         <td>
                             <div style="font-weight: 600; color: ${b.guncel_sla > 48 ? 'var(--error)' : 'inherit'};">
-                                ${b.guncel_sla != null ? b.guncel_sla + ' Saat' : '-'}
+                                ${formatSla(b.guncel_sla)}
                             </div>
                         </td>
                         <td>
                             <div style="font-weight: 600; color: #64748b;">
-                                ${b.mevcut_durum_saat != null ? b.mevcut_durum_saat + ' Saat' : '-'}
+                                ${formatSla(b.mevcut_durum_saat)}
                             </div>
                         </td>
                         <td><span class="badge ${b.durum}">${DURUM_LABELS[b.durum] || b.durum}</span>
