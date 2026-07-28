@@ -813,8 +813,9 @@
                     if (data.success) {
                         const b = data.basvuru;
                         // Metin alanları
-                        ['firma_unvani', 'tabela_adi', 'tc_no', 'vergi_no', 'faaliyet_alani', 'adres', 'yetkili_ad_soyad', 'telefon', 'email', 'alt_telefon', 'pos_adedi', 'aylik_ciro', 'website_url'].forEach(id => {
-                            if (document.getElementById(id) && b[id]) document.getElementById(id).value = b[id];
+                        ['firma_unvani', 'tabela_adi', 'tc_no', 'vergi_no', 'faaliyet_alani', 'adres', 'yetkili_ad_soyad', 'telefon', 'email', 'alt_telefon', 'pos_adedi', 'aylik_ciro', 'website_url'].forEach(name => {
+                            const el = document.querySelector(`[name="${name}"]`);
+                            if (el && b[name]) el.value = b[name];
                         });
 
                         // Select alanları
@@ -883,7 +884,8 @@
         });
 
         function openDraftModal() {
-            const email = document.getElementById('email').value;
+            const emailEl = document.querySelector('[name="email"]');
+            const email = emailEl ? emailEl.value : '';
             if (!email || !email.includes('@')) {
                 alert('Taslağınızı kaydedebilmemiz için en azından 1. adımdaki E-Posta adresini doldurmuş olmanız gerekmektedir.');
                 return;
