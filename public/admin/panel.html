@@ -1113,8 +1113,8 @@
                         <td>${b.il || '-'}</td>
                         <td>${b.pos_adedi}x ${b.pos_tipi}</td>
                         <td>
-                            <div style="font-weight: 600; color: ${b.sla_toplam_saat > 48 ? 'var(--error)' : 'inherit'};">
-                                ${b.sla_toplam_saat ? b.sla_toplam_saat + ' Saat' : '-'}
+                            <div style="font-weight: 600; color: ${b.guncel_sla > 48 ? 'var(--error)' : 'inherit'};">
+                                ${b.guncel_sla != null ? b.guncel_sla + ' Saat' : '-'}
                             </div>
                         </td>
                         <td><span class="badge ${b.durum}">${DURUM_LABELS[b.durum] || b.durum}</span>

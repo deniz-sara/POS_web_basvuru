@@ -56,7 +56,8 @@ router.get('/basvurular', authMiddleware, async (req, res) => {
         let query = `
         SELECT a.*,
           COUNT(d.id) as toplam_belge,
-          SUM(CASE WHEN d.durum = 'eksik' THEN 1 ELSE 0 END) as eksik_belge
+          SUM(CASE WHEN d.durum = 'eksik' THEN 1 ELSE 0 END) as eksik_belge,
+          COALESCE(a.sla_toplam_saat, ROUND((EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - a.basvuru_tarihi)) / 3600.0)::numeric, 1)) as guncel_sla
         FROM applications a
         LEFT JOIN documents d ON a.id = d.application_id
         WHERE 1=1
@@ -260,6 +261,22 @@ router.get('/export', authMiddleware, async (req, res) => {
         const basvurularRes = await db.query(query, params);
         const basvurular = basvurularRes.rows;
 
+        // Fetch SLA history for detailed stage durations
+        const appIds = basvurular.map(b => b.id);
+        const historyDict = {};
+        if (appIds.length > 0) {
+            const historyRes = await db.query('SELECT application_id, durum, gecen_sure_dk, baslangic_tarihi, bitis_tarihi FROM status_history WHERE application_id = ANY($1)', [appIds]);
+            historyRes.rows.forEach(h => {
+                if (!historyDict[h.application_id]) historyDict[h.application_id] = {};
+                if (!historyDict[h.application_id][h.durum]) historyDict[h.application_id][h.durum] = 0;
+                let addMinutes = h.gecen_sure_dk || 0;
+                if (!h.bitis_tarihi) { // Devam eden aktif aşama süresi
+                   addMinutes += Math.round((new Date() - new Date(h.baslangic_tarihi)) / 60000);
+                }
+                historyDict[h.application_id][h.durum] += addMinutes;
+            });
+        }
+
         const durumLabels = {
             alindi: 'Başvuru Alındı',
             inceleme: 'Evrak İnceleme',
@@ -287,6 +304,10 @@ router.get('/export', authMiddleware, async (req, res) => {
                     cihazlarStr = 'Format Hatası';
                 }
             }
+            
+            const h = historyDict[b.id] || {};
+            const formatSaat = (dk) => dk ? (Math.round(dk / 60.0 * 10) / 10) + ' Saat' : '-';
+            const guncelSLA = b.sla_toplam_saat || Math.round((new Date() - new Date(b.basvuru_tarihi)) / 3600000 * 10) / 10;
 
             return {
                 'Başvuru No': b.basvuru_no,
@@ -304,7 +325,11 @@ router.get('/export', authMiddleware, async (req, res) => {
                 'Tahmini Ciro': b.aylik_ciro,
                 'Durum': durumLabels[b.durum] || b.durum,
                 'Tarih': b.basvuru_tarihi,
-                'SLA (Toplam Saat)': b.sla_toplam_saat || 0,
+                'SLA Toplam (Saat)': guncelSLA,
+                'Bekleme: Alındı': formatSaat(h['alindi']),
+                'Bekleme: Evrak Bekleme': formatSaat(h['ek_bilgi']),
+                'Bekleme: İnceleme': formatSaat(h['inceleme']),
+                'Bekleme: Değerlendirme': formatSaat(h['degerlendirme']),
                 'Onaylanma Tarihi': b.onaylanma_tarihi || '-'
             };
         });
