@@ -189,10 +189,15 @@ router.put('/basvuru/:id/durum', authMiddleware, async (req, res) => {
 // PUT /api/admin/basvuru/:id/teklif-ilet - Fiyat Teklifi İlet
 router.put('/basvuru/:id/teklif-ilet', authMiddleware, async (req, res) => {
     try {
-        const { odeme_periyodu, teklif_detayi, aciklama } = req.body;
+        let { odeme_periyodu, teklif_detayi, aciklama } = req.body;
         const appRes = await db.query('SELECT * FROM applications WHERE id = $1', [req.params.id]);
         const app = appRes.rows[0];
         if (!app) return res.status(404).json({ success: false, message: 'Başvuru bulunamadı.' });
+
+        if (typeof teklif_detayi === 'object' && teklif_detayi !== null) {
+            teklif_detayi.orjinal_periyot = app.odeme_periyodu;
+            teklif_detayi.teklif_periyodu = odeme_periyodu;
+        }
 
         // SLA Update (to close current timer for history)
         const durum = 'teklif_bekleniyor';
@@ -365,6 +370,21 @@ router.get('/export', authMiddleware, async (req, res) => {
             const formatSaat = (dk) => dk ? (Math.round(dk / 60.0 * 10) / 10) + ' Saat' : '-';
             const guncelSLA = b.sla_toplam_saat || Math.round((new Date() - new Date(b.basvuru_tarihi)) / 3600000 * 10) / 10;
 
+            let teklifStr = '-';
+            if (b.teklif_detayi) {
+                try {
+                    let td = typeof b.teklif_detayi === 'string' ? JSON.parse(b.teklif_detayi) : b.teklif_detayi;
+                    let oranlar = [];
+                    if(td.tek_cekim) oranlar.push(`Tek Çekim: %${td.tek_cekim}`);
+                    for(let i=2; i<=12; i++) {
+                        if(td['taksit_'+i]) oranlar.push(`${i} Taksit: %${td['taksit_'+i]}`);
+                    }
+                    teklifStr = `Talep: ${td.orjinal_periyot || b.odeme_periyodu || '-'} | Teklif: ${td.teklif_periyodu || b.odeme_periyodu || '-'} | Oranlar: ${oranlar.join(', ')}`;
+                } catch(e) {
+                    teklifStr = 'Hata';
+                }
+            }
+
             return {
                 'Başvuru No': b.basvuru_no,
                 'Firma Unvanı': b.firma_unvani,
@@ -382,6 +402,7 @@ router.get('/export', authMiddleware, async (req, res) => {
                 'Durum': durumLabels[b.durum] || b.durum,
                 'Tarih': b.basvuru_tarihi,
                 'SLA Toplam (Saat)': guncelSLA,
+                'Fiyat Teklifi ve Oranlar': teklifStr,
                 'Bekleme: Alındı': formatSaat(h['alindi']),
                 'Bekleme: Evrak Bekleme': formatSaat(h['ek_bilgi']),
                 'Bekleme: İnceleme': formatSaat(h['inceleme']),
@@ -411,11 +432,13 @@ router.get('/stats', authMiddleware, async (req, res) => {
         const durumlarRes = await db.query('SELECT durum, COUNT(*) as count FROM applications GROUP BY durum');
         const bugunRes = await db.query("SELECT COUNT(*) as count FROM applications WHERE (basvuru_tarihi AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Istanbul')::date = (CURRENT_TIMESTAMP AT TIME ZONE 'Europe/Istanbul')::date");
         const illerRes = await db.query("SELECT DISTINCT il FROM applications WHERE il IS NOT NULL ORDER BY il");
+        const slaGecenRes = await db.query(`SELECT COUNT(*) as count FROM applications WHERE COALESCE(sla_toplam_saat, ROUND((EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - basvuru_tarihi)) / 3600.0)::numeric, 1)) > 24 AND durum NOT IN ('onaylandi', 'reddedildi')`);
 
         res.json({
             success: true,
             toplam: parseInt(toplamRes.rows[0].count),
             bugun: parseInt(bugunRes.rows[0].count),
+            slaGecen: parseInt(slaGecenRes.rows[0].count),
             durumlar: durumlarRes.rows.map(d => ({ durum: d.durum, count: parseInt(d.count) })),
             iller: illerRes.rows.map(r => r.il).filter(i => i.trim() !== '')
         });

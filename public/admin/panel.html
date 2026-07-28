@@ -113,17 +113,24 @@
         /* Stats Cards */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
             margin-bottom: 30px;
+            overflow-x: auto;
         }
 
         .stat-card {
             background: var(--surface);
-            padding: 20px;
+            padding: 15px;
             border-radius: 10px;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
             border-left: 4px solid var(--primary);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
 
         .stat-card .title {
@@ -1037,13 +1044,16 @@
                     ilSelect.value = currentVal;
                 }
 
+                let teklifCount = stats.durumlar.find(d => d.durum === 'teklif_bekleniyor')?.count || 0;
+
                 document.getElementById('statsGrid').innerHTML = `
-                    <div class="stat-card"><div class="title">Toplam Başvuru</div><div class="value">${stats.toplam}</div></div>
-                    <div class="stat-card" style="border-left-color: var(--secondary)"><div class="title">Henüz İşleme Alınmayan</div><div class="value">${stats.durumlar.find(d => d.durum === 'alindi')?.count || 0}</div></div>
-                    <div class="stat-card" style="border-left-color: var(--warning)"><div class="title">Evrak İnceleme</div><div class="value">${stats.durumlar.find(d => d.durum === 'inceleme')?.count || 0}</div></div>
-                    <div class="stat-card" style="border-left-color: var(--error)"><div class="title">Evrak Bekleyen</div><div class="value">${eksikCount}</div></div>
-                    <div class="stat-card" style="border-left-color: var(--success)"><div class="title">Onaylanan</div><div class="value">${onayCount}</div></div>
-                    <div class="stat-card" style="border-left-color: var(--info)"><div class="title">Bugün Gelen</div><div class="value">${stats.bugun}</div></div>
+                    <div class="stat-card" onclick="filterByDurum('')"><div class="title">Toplam</div><div class="value">${stats.toplam}</div></div>
+                    <div class="stat-card" style="border-left-color: var(--info)" onclick="filterByDurum('')"><div class="title">Bugün</div><div class="value">${stats.bugun}</div></div>
+                    <div class="stat-card" style="border-left-color: var(--secondary)" onclick="filterByDurum('alindi')"><div class="title">Alınanlar</div><div class="value">${stats.durumlar.find(d => d.durum === 'alindi')?.count || 0}</div></div>
+                    <div class="stat-card" style="border-left-color: var(--warning)" onclick="filterByDurum('inceleme')"><div class="title">İnceleme</div><div class="value">${stats.durumlar.find(d => d.durum === 'inceleme')?.count || 0}</div></div>
+                    <div class="stat-card" style="border-left-color: var(--error)" onclick="filterByDurum('ek_bilgi')"><div class="title">Evrak Bek.</div><div class="value">${eksikCount}</div></div>
+                    <div class="stat-card" style="border-left-color: #3730a3" onclick="filterByDurum('teklif_bekleniyor')"><div class="title">Teklif Bek.</div><div class="value">${teklifCount}</div></div>
+                    <div class="stat-card" style="border-left-color: #991b1b" onclick="sortBySLA()"><div class="title">SLA Geçen</div><div class="value">${stats.slaGecen || 0}</div></div>
                 `;
             }
 
@@ -1172,6 +1182,18 @@
             document.getElementById('f_tarih_bitis').value = '';
             document.getElementById('f_il').value = '';
             document.getElementById('f_urun').value = '';
+            loadBasvurular();
+        }
+
+        function filterByDurum(val) {
+            document.getElementById('f_durum').value = val;
+            document.getElementById('f_sort').value = '';
+            loadBasvurular();
+        }
+
+        function sortBySLA() {
+            document.getElementById('f_durum').value = '';
+            document.getElementById('f_sort').value = 'sla_desc';
             loadBasvurular();
         }
 
